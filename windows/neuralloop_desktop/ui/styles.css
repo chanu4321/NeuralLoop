@@ -150,8 +150,10 @@ input[type=range] { accent-color: var(--accent); }
 .reader ul, .reader ol { margin: 0 0 14px; padding-left: 26px; } .reader code { background: var(--sunk); border-radius: 5px; padding: 1px 5px; font-size: 15px; }
 .reader pre { background: var(--sunk); border-radius: 12px; padding: 12px; overflow-x: auto; font-size: 14px; line-height: 1.5; }
 .pdf-page { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; min-height: 200px; }
-.reader .page-wrap { margin: 0 0 22px; text-align: left; }
-.sticky-progress { position: sticky; z-index: 1; box-shadow: 0 6px 18px -10px rgba(0,0,0,.35); }
+.page-wrap { margin: 0 0 22px; }
+.pdf-page { height: auto; }
+.sticky-progress { position: sticky; z-index: 1; background: var(--paper); padding: 10px 0 4px; margin: -10px 0 0; }
+.sticky-progress .progress-row { box-shadow: 0 6px 18px -10px rgba(0,0,0,.35); }
 .sticky-progress .progress-row { background: var(--surface); border: 1px solid var(--line); }
 .page-meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .page-meter .tiny { flex: none; min-width: 120px; }

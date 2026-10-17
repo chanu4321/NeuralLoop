@@ -375,7 +375,7 @@ const BookScreen = (() => {
       const holder = el("div", { class: "reader pdf" });
       for (let i = 0; i < plan.pages; i++) {
         const img = el("img", { class: "pdf-page", loading: "lazy", alt: `Page ${i + 1}`, src: `${NL.base}/page/${id}/${plan.file}/${i}.png` });
-        const wrap = el("figure", { class: "page-wrap" }, img, pageMeter(`Page ${i + 1} of ${plan.pages}`));
+        const wrap = el("div", { class: "page-wrap" }, img, pageMeter(`Page ${i + 1} of ${plan.pages}`));
         holder.append(wrap); pages.push(img);
       }
       body.append(holder);
@@ -397,7 +397,7 @@ const BookScreen = (() => {
     drawSoFar(plan.done);
     // The overall bar stays in view under the chapter's header while you read.
     const head = document.querySelector(".chapter-head");
-    if (head && !s.steps.read) { soFar.classList.add("sticky-progress"); soFar.style.top = `${head.offsetHeight + 8}px`; }
+    if (head && !s.steps.read) { soFar.classList.add("sticky-progress"); soFar.style.top = `${head.offsetHeight}px`; }
     if (s.steps.read || !plan.needs.length) return;
     const scroller = document.querySelector(".chapter-main");
     let last = performance.now();
