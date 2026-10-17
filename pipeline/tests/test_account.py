@@ -142,7 +142,32 @@ def test_usage_summarises_notebooklms_windows_and_what_it_can_still_make(monkeyp
 def test_usage_when_signed_out_or_unknown(monkeypatch):
     monkeypatch.setattr(account.subprocess, "run", fake_run([(1, "")], []))
     monkeypatch.setattr(account, "_cli", lambda: ["/venv/bin/python", "-m", "notebooklm"])
-    assert account.usage() == {"known": False}
+    assert account.usage()["known"] is False
+
+
+def test_notebooklms_output_is_read_as_utf8_on_every_system(monkeypatch):
+    """It prints its JSON with non-ASCII characters as they are; Windows' own encoding (cp1252) garbled or
+    refused them, so the allowance always read as unknown there."""
+    seen = {}
+
+    def run(argv, **kwargs):
+        seen.update(kwargs)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(USAGE, ensure_ascii=False), stderr="")
+
+    monkeypatch.setattr(account.subprocess, "run", run)
+    monkeypatch.setattr(account, "_cli", lambda: ["/venv/bin/python", "-m", "notebooklm"])
+    assert account.usage()["known"] is True
+    assert seen["encoding"] == "utf-8" and seen["errors"] == "replace"
+    assert seen["env"]["PYTHONIOENCODING"] == "utf-8" and seen["env"]["PYTHONUTF8"] == "1"
+
+
+def test_usage_that_fails_says_why(monkeypatch):
+    def run(argv, **kwargs):
+        return SimpleNamespace(returncode=1, stdout="", stderr="Traceback…\nAuthError: session expired\n")
+
+    monkeypatch.setattr(account.subprocess, "run", run)
+    monkeypatch.setattr(account, "_cli", lambda: ["/venv/bin/python", "-m", "notebooklm"])
+    assert account.usage() == {"known": False, "problem": "AuthError: session expired"}
 
 
 @pytest.mark.parametrize(

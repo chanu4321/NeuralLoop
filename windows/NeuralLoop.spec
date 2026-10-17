@@ -96,11 +96,14 @@ a = Analysis(
     noarchive=False,
 )
 pyz = PYZ(a.pure)
+# Both programs run in Python's UTF-8 mode: files, pipes and the console are UTF-8 whatever Windows' code page
+# (a frozen program may not read PYTHONUTF8 from the environment).
+UTF8_MODE = [("X utf8_mode=1", None, "OPTION")]
 
 app = EXE(
     pyz,
     a.scripts,
-    [],
+    UTF8_MODE,
     exclude_binaries=True,
     name="NeuralLoop",
     console=False,
@@ -110,7 +113,7 @@ app = EXE(
 pipeline = EXE(
     pyz,
     a.scripts,
-    [],
+    UTF8_MODE,
     exclude_binaries=True,
     name="nl-book",
     console=True,

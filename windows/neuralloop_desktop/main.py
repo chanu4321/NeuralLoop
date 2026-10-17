@@ -32,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.argv = ["neuralloop", *argv[1:]]
         return pipeline() or 0
     if argv[:1] == ["-m"] and len(argv) > 1 and argv[1].split(".")[0] in RUNNABLE_MODULES:
+        utf8_output()  # NotebookLM's JSON keeps non-ASCII characters; the pipeline reads it as UTF-8
         sys.argv = [argv[1], *argv[2:]]
         runpy.run_module(argv[1], run_name="__main__", alter_sys=True)
         return 0

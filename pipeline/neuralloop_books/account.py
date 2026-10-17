@@ -33,6 +33,27 @@ def _cli() -> list[str] | None:
     return [found] if found else None
 
 
+def _run_cli(cli: list[str], arguments: list[str], timeout: float) -> subprocess.CompletedProcess:
+    """One NotebookLM command, its output read as UTF-8. It prints JSON with non-ASCII characters as they are,
+    which Windows' own encoding (cp1252) garbles or refuses, so the child writes UTF-8 too."""
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
+    return subprocess.run(
+        [*cli, *arguments],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        env=env,
+        **portable.no_window(),
+    )
+
+
+def _last_line(text: str | None) -> str:
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    return lines[-1][:200] if lines else ""
+
+
 def _chrome_installed() -> bool:
     return portable.chrome_installed()
 
@@ -51,13 +72,7 @@ def status() -> dict:
     if not cli:
         return {"signedIn": False, "email": ""}
     try:
-        result = subprocess.run(
-            [*cli, "auth", "check", "--json"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            **portable.no_window(),
-        )
+        result = _run_cli(cli, ["auth", "check", "--json"], timeout=30)
     except (OSError, subprocess.TimeoutExpired):
         return {"signedIn": False, "email": ""}
     try:
@@ -137,27 +152,25 @@ def sign_out() -> int:
     cli = _cli()
     if not cli:
         return 0
-    result = subprocess.run(
-        [*cli, "auth", "logout"], capture_output=True, text=True, timeout=60, **portable.no_window()
-    )
+    result = _run_cli(cli, ["auth", "logout"], timeout=60)
     return 0 if result.returncode == 0 else 3
 
 
 def usage() -> dict:
     """NotebookLM's live usage: how much of the five-hour and weekly windows is left, when each resets, and
-    whether it can make a podcast or video right now. {"known": False} when it can't be read."""
+    whether it can make a podcast or video right now. {"known": False} when it can't be read, with `problem`
+    (NotebookLM's last word on why) when its command failed."""
     cli = _cli()
     if not cli:
         return {"known": False}
     try:
-        result = subprocess.run(
-            [*cli, "usage", "--json"], capture_output=True, text=True, timeout=60, **portable.no_window()
-        )
-        report = json.loads(result.stdout or "{}") if result.returncode == 0 else {}
-    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
-        report = {}
+        result = _run_cli(cli, ["usage", "--json"], timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return {"known": False, "problem": _last_line(str(error)) or type(error).__name__}
+    if result.returncode != 0:
+        return {"known": False, "problem": _last_line(result.stderr) or f"exit {result.returncode}"}
     try:
-        return _usage_summary(report)
+        return _usage_summary(json.loads(result.stdout or "{}"))
     except (KeyError, TypeError, ValueError):  # a report in a shape we don't know: say we don't know
         return {"known": False}
 

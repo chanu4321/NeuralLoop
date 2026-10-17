@@ -206,3 +206,9 @@ def test_reads_notebooklm_usage_and_knows_what_it_can_make():
     assert (
         prep.can_make(usage, "video") and not prep.can_make(usage, "audio") and prep.can_make(usage, "quiz")
     )
+
+
+def test_why_the_allowance_couldnt_be_read_comes_through():
+    usage = prep.parse_usage('NotebookLM usage: {"known": false, "problem": "AuthError: session expired"}')
+    assert usage["known"] is False and usage["problem"] == "AuthError: session expired"
+    assert prep.parse_usage('NotebookLM usage: {"known": false}')["problem"] == ""

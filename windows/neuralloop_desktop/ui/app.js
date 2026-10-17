@@ -446,7 +446,9 @@ async function accountPage() {
 
 function usageView(usage, signedIn) {
   if (!signedIn) return el("p", { class: "small muted" }, "Sign in with Google to see how much NotebookLM can still make.");
-  if (!usage || !usage.known) return el("p", { class: "small muted" }, "NotebookLM didn't say just now. Pip asks again every few minutes.");
+  if (!usage || !usage.known) return el("div", { class: "col", style: "gap:4px" },
+    el("p", { class: "small muted" }, "NotebookLM didn't say just now. Pip asks again every few minutes."),
+    usage && usage.problem ? el("p", { class: "tiny faint" }, `NotebookLM said: ${usage.problem}`) : "");
   const meter = (label, w) => w ? el("div", { class: "meter" }, el("div", { class: "row" }, el("h3", {}, `${Math.round(w.remaining)}%`), el("span", { class: "small faint" }, "left")),
     progressBar(w.remaining / 100), el("span", { class: "tiny faint" }, `${label} · resets ${new Date(w.resetsAt).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`)) : "";
   return el("div", { class: "row wrap", style: "gap:24px" }, meter("Five hours", usage.fiveHour), meter("This week", usage.weekly),

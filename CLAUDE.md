@@ -153,7 +153,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
   `OPENROUTER_API_KEY`, `NEURALLOOP_API_KEY` + `NEURALLOOP_BASE_URL` (custom), never argv or files; Anthropic, OpenAI and OpenRouter keys go only to their official addresses (an inherited `ANTHROPIC_BASE_URL`/`OPENAI_BASE_URL` is ignored). Other commands: `--setup`
   (start Ollama, download the local model and Rumik; prints `  setup: …` lines, then `Setup: ready`), `--signin` (Google sign-in
   in a real browser; the session is NotebookLM's), `--account` (both print `Account: {"signedIn", "email"}`), `--signout`,
-  `--usage` (`NotebookLM usage: {known, available, fiveHour:{remaining, resetsAt}, weekly:{…}, podcast, video}`), `--check-ai`
+  `--usage` (`NotebookLM usage: {known, available, fiveHour:{remaining, resetsAt}, weekly:{…}, podcast, video}`; when NotebookLM's command fails, `{known: false, problem}` with its last line; its output is read as UTF-8), `--check-ai`
   (prints `AI check: {role: {ok, provider, name, model, seconds} | {ok: false, provider, message}}` for `make`, `task:<item>`,
   `recall`; exit 3 if any fail; with `--provider`/`--model`/`--base-url` it checks that model as `make`), `--grade-recall` (stdin `{question, keyPoints, answer}`, stdout `{covered:[bool], score,
   feedback, missing, by}`). `--ai-config PATH` (or `NEURALLOOP_AI_CONFIG`): the person's `ai.json` = `{engine, make:{provider,
