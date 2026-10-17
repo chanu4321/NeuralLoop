@@ -238,3 +238,21 @@ def test_the_knowledge_graph_keeps_ids_unique_and_links_whole():
     assert g["tour"] == [{"title": "u", "description": None, "nodeIds": ["a"]}]
     assert [n["id"] for n in book.only_chapters(g, {1})["nodes"]] == ["a"]
     assert book.only_chapters(g, {1})["edges"] == []
+
+
+def test_reading_shows_how_far_each_page_is_while_you_read():
+    """The step's bar moves with every second read, and each page shows its own share, before any page has
+    had all the time it needs (a dense page needs 30 to 40 s)."""
+    r = {"pages": {}, "count": 0, "last": None}
+    needs = [40.0, 40.0, 20.0]
+    for _ in range(10):
+        coverage.credit(r, [0], 1, 3, True)
+    got = coverage.reading_progress(r, needs)
+    assert got["counted"] == 0 and got["pages"] == [0.25, 0.0, 0.0]
+    assert got["time"] == 10 / 100
+    for _ in range(25):
+        coverage.credit(r, [2], 1, 3, True)  # more than page 3 needs: capped at its share
+    got = coverage.reading_progress(r, needs)
+    assert got["pages"] == [0.25, 0.0, 1.0] and got["time"] == 30 / 100 and got["counted"] == 1
+    empty = coverage.reading_progress(None, [])
+    assert empty["pages"] == [] and empty["time"] == 0

@@ -164,12 +164,18 @@ def reading_progress(record: dict | None, needs: list[float]) -> dict:
     reached = bool(needs) and (last if last is not None else -1) >= len(needs) - 1
     total = len(needs)
     frac = counted / total if total else 0.0
+    # How far along each page is, and the share of the chapter's reading time spent (each page capped at what
+    # it needs): what the window shows while a page is still being read. Only `fraction` decides `done`.
+    shares = [min(1.0, pages.get(str(i), 0.0) / need) if need > 0 else 1.0 for i, need in enumerate(needs)]
+    spent = sum(min(pages.get(str(i), 0.0), need) for i, need in enumerate(needs))
     return {
         "counted": counted,
         "total": total,
         "reachedLast": reached,
         "fraction": frac,
         "done": total > 0 and reached and frac >= READING_ENOUGH - 1e-9,
+        "pages": [round(x, 4) for x in shares],
+        "time": round(spent / sum(needs), 4) if total and sum(needs) > 0 else 0.0,
     }
 
 

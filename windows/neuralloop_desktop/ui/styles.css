@@ -134,23 +134,36 @@ input[type=range] { accent-color: var(--accent); }
   font-family: var(--display); font-size: 14px; flex: none; }
 .chapter-item.on .n { background: var(--accent); color: var(--on-accent); }
 .chapter-main { overflow-y: auto; position: relative; }
-.chapter-head { padding: 22px 28px 14px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--paper); z-index: 2; }
+.chapter-head { padding: 22px max(28px, calc((100% - 880px) / 2)) 14px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--paper); z-index: 2; }
 .steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .step { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; display: flex; gap: 6px; align-items: center;
   font-family: var(--display); font-weight: 500; font-size: 14px; color: var(--ink2); cursor: pointer; }
 .step.done { color: var(--mint); } .step.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-.chapter-body { padding: 28px; max-width: 900px; display: flex; flex-direction: column; gap: 20px; }
+.chapter-body { padding: 28px; max-width: 880px; margin: 0 auto; box-sizing: content-box; display: flex; flex-direction: column; gap: 20px; }
 .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 40px; }
-.progress-row { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--sunk); max-width: 560px; }
-.reader { max-width: 680px; font-size: 17px; line-height: 1.75; }
+.progress-row { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--sunk); }
+.reader { max-width: 700px; width: 100%; margin: 0 auto; font-size: 17px; line-height: 1.75; }
+.reader.pdf { max-width: 760px; }
 .reader p { margin: 0 0 14px; } .reader h2, .reader h3 { margin: 18px 0 10px; display: flex; gap: 8px; align-items: center; }
 .reader figure { margin: 10px 0 18px; text-align: center; } .reader figure img { max-width: 100%; max-height: 420px; border-radius: 12px; }
 .reader figcaption, .reader .caption { font-size: 13px; color: var(--ink2); font-style: italic; text-align: center; }
 .reader ul, .reader ol { margin: 0 0 14px; padding-left: 26px; } .reader code { background: var(--sunk); border-radius: 5px; padding: 1px 5px; font-size: 15px; }
 .reader pre { background: var(--sunk); border-radius: 12px; padding: 12px; overflow-x: auto; font-size: 14px; line-height: 1.5; }
-.pdf-page { display: block; width: 100%; max-width: 760px; border-radius: 8px; border: 1px solid var(--line); background: #fff; margin-bottom: 14px; min-height: 200px; }
+.pdf-page { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; min-height: 200px; }
+.reader .page-wrap { margin: 0 0 22px; text-align: left; }
+.sticky-progress { position: sticky; z-index: 1; box-shadow: 0 6px 18px -10px rgba(0,0,0,.35); }
+.sticky-progress .progress-row { background: var(--surface); border: 1px solid var(--line); }
+.page-meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.page-meter .tiny { flex: none; min-width: 120px; }
+.page-meter .track { flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.page-meter .fill { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+.page-meter.read .fill { background: var(--mint); } .page-meter.read .tiny { color: var(--mint); }
+.reader section { margin-bottom: 26px; }
+.plan { gap: 10px; }
+.plan-row { display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: baseline; }
+.plan-row .pill { justify-self: start; white-space: nowrap; }
 .level-deep { background: var(--rose-soft); color: var(--rose); } .level-normal { background: var(--mint-soft); color: var(--mint); }
-.level-skim { background: var(--sunk); color: var(--ink2); }
+.level-skim { background: var(--surface); color: var(--ink2); box-shadow: inset 0 0 0 1px var(--line); }
 .media { width: 100%; max-width: 760px; border-radius: 14px; background: #000; }
 .player { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); max-width: 760px; }
 .player .play { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent); color: var(--on-accent); font-size: 16px; cursor: pointer; flex: none; }

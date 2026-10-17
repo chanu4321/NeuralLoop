@@ -343,32 +343,48 @@ const BookScreen = (() => {
     const plan = await api().reading_plan(id, c.n);
     if (!plan) return;
     const soFar = el("div");
+    const unitOf = n => plan.kind === "pdf" ? (n === 1 ? "page" : "pages") : (n === 1 ? "section" : "sections");
+    // Each page (a PDF page, or ~300 words of text) counts once it's had its reading time: about 6 s for a
+    // light page, 30–40 s for a dense one. The bar moves with every second read; each page shows its own share.
+    let paused = false;
     const drawSoFar = p => {
       if (s.steps.read) return soFar.replaceChildren();
-      const unit = plan.kind === "pdf" ? (p.total === 1 ? "page" : "pages") : (p.total === 1 ? "section" : "sections");
-      soFar.replaceChildren(stepProgress(p.fraction, `Read ${Math.floor(p.fraction * 100)}% · ${p.counted} of ${p.total} ${unit}`,
-        p.fraction >= 0.85 && !p.reachedLast ? "Nearly there: this step ticks itself off once you reach the end."
-          : "Pages count as you read them, at your own pace. This step ticks itself off at 85% and the last page."));
+      const detail = paused ? "Paused: NeuralLoop counts while it's in front and you're reading. Scroll or move the mouse to carry on."
+        : p.fraction >= 0.85 && !p.reachedLast ? "Nearly there: this step ticks itself off once you reach the end."
+        : `Each ${unitOf(1)} counts once you've spent its reading time on it. This step ticks itself off when most are read and you reach the last.`;
+      soFar.replaceChildren(stepProgress(p.time ?? p.fraction, `Read ${Math.floor((p.time ?? p.fraction) * 100)}% · ${p.counted} of ${p.total} ${unitOf(p.total)} read`, detail));
+      (p.pages || []).forEach((share, i) => meters[i] && meters[i](share));
     };
-    drawSoFar(plan.done);
-    body.append(soFar);
     if (c.guide.length) {
-      body.append(el("div", { class: "card sunk col", style: "gap:8px" }, el("h4", {}, "Your reading plan"),
-        c.guide.map(g => el("div", { class: "row top small" }, levelPill(g.level), el("span", {}, el("b", {}, g.section), "  ", el("span", { class: "muted" }, g.why))))));
+      body.append(el("div", { class: "card sunk col plan" }, el("h4", {}, "Your reading plan"),
+        c.guide.map(g => el("div", { class: "plan-row small" }, levelPill(g.level), el("span", {}, el("b", {}, g.section), " ", el("span", { class: "muted" }, g.why))))));
     }
-    const pages = [];
+    const pages = [], meters = [];
+    const pageMeter = (label) => {
+      const fill = el("span", { class: "fill" });
+      const text = el("span", { class: "tiny faint" }, label);
+      const row = el("div", { class: "page-meter", "aria-hidden": "true" }, text, el("span", { class: "track" }, fill));
+      meters.push(share => {
+        fill.style.width = `${Math.round(Math.min(1, share) * 100)}%`;
+        row.classList.toggle("read", share >= 1);
+        text.textContent = share >= 1 ? `✓ ${label} read` : label;
+      });
+      return row;
+    };
     if (plan.kind === "pdf") {
-      const holder = el("div", { class: "reader" });
+      const holder = el("div", { class: "reader pdf" });
       for (let i = 0; i < plan.pages; i++) {
         const img = el("img", { class: "pdf-page", loading: "lazy", alt: `Page ${i + 1}`, src: `${NL.base}/page/${id}/${plan.file}/${i}.png` });
-        holder.append(img); pages.push(img);
+        const wrap = el("figure", { class: "page-wrap" }, img, pageMeter(`Page ${i + 1} of ${plan.pages}`));
+        holder.append(wrap); pages.push(img);
       }
       body.append(holder);
     } else {
       const reader = el("article", { class: "reader" });
-      plan.sections.forEach(section => {
+      plan.sections.forEach((section, k) => {
         const div = el("section", {});
         section.forEach(i => div.append(block(plan.blocks[i], c)));
+        div.append(pageMeter(`Section ${k + 1} of ${plan.sections.length}`));
         reader.append(div); pages.push(div);
       });
       reader.addEventListener("click", e => {
@@ -377,6 +393,11 @@ const BookScreen = (() => {
       });
       body.append(reader);
     }
+    body.prepend(soFar);
+    drawSoFar(plan.done);
+    // The overall bar stays in view under the chapter's header while you read.
+    const head = document.querySelector(".chapter-head");
+    if (head && !s.steps.read) { soFar.classList.add("sticky-progress"); soFar.style.top = `${head.offsetHeight + 8}px`; }
     if (s.steps.read || !plan.needs.length) return;
     const scroller = document.querySelector(".chapter-main");
     let last = performance.now();
@@ -391,7 +412,9 @@ const BookScreen = (() => {
       const earning = NL.focused && !document.hidden && Date.now() - NL.lastInput <= 90000;
       const result = await api().credit_reading(id, c.n, visible, seconds, plan.needs, earning);
       if (result) { clearInterval(timer); soFar.replaceChildren(); return earned(result, c); }
-      if (earning && visible.length) {
+      const wasPaused = paused;
+      paused = !earning;
+      if ((earning && visible.length) || paused !== wasPaused) {
         const fresh = await api().reading_plan(id, c.n);
         if (fresh) drawSoFar(fresh.done);
       }
