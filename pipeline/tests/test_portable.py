@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import types
+from pathlib import Path
 
 import pytest
 
@@ -30,8 +31,37 @@ def test_lock_is_released_when_the_handle_closes(tmp_path):
         portable.try_lock(again)
 
 
+def test_another_holder_shows_as_locked_and_a_left_over_file_does_not(tmp_path):
+    path = tmp_path / ".running"
+    assert not portable.is_locked(path)  # no file at all
+    held = subprocess.Popen(
+        [sys.executable, "-c", HOLD, str(path)],
+        stdout=subprocess.PIPE,
+        text=True,
+        cwd=Path(__file__).parents[1],
+    )
+    try:
+        assert held.stdout.readline().strip() == "locked"
+        assert portable.is_locked(path)
+    finally:
+        held.kill()
+        held.wait()
+    assert path.exists() and not portable.is_locked(path)
+
+
+HOLD = """
+import sys, time
+from neuralloop_books import portable
+handle = open(sys.argv[1], "a+")
+portable.try_lock(handle)
+print("locked", flush=True)
+time.sleep(60)
+"""
+
+
 class FakeMsvcrt(types.ModuleType):
     LK_NBLCK = 2
+    LK_UNLCK = 0
 
     def __init__(self, busy: bool):
         super().__init__("msvcrt")
@@ -123,3 +153,9 @@ def test_windows_chrome_is_looked_for_in_program_files(monkeypatch):
     )
     assert [p.name for p in paths] == ["chrome.exe", "chrome.exe"]
     assert "Program Files" in paths[0].parts
+
+
+def test_the_apps_home_override_wins_everywhere(monkeypatch):
+    for windows in (True, False):
+        monkeypatch.setattr(portable, "WINDOWS", windows)
+        assert portable.app_data({"NEURALLOOP_HOME": "/tmp/nl", "APPDATA": "C:/x"}).as_posix() == "/tmp/nl"

@@ -149,6 +149,7 @@ def _book_lock(out: Path):
         yield
     finally:
         if portable.WINDOWS:  # Windows can't remove a file that's still open; one opened since then stays
+            portable.unlock(handle)
             handle.close()
             with contextlib.suppress(PermissionError):
                 path.unlink(missing_ok=True)

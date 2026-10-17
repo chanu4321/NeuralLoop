@@ -57,6 +57,39 @@ def try_lock(handle: IO) -> None:
         raise LockBusy from None
 
 
+def unlock(handle: IO) -> None:
+    """Let go of a lock taken with `try_lock` (Windows wants it unlocked before the file closes)."""
+    if WINDOWS:
+        import msvcrt
+
+        handle.seek(_WINDOWS_LOCK_OFFSET)
+        with contextlib.suppress(OSError):
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        handle.seek(0)
+        return
+    import fcntl
+
+    with contextlib.suppress(OSError):
+        fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+def is_locked(path: Path) -> bool:
+    """Whether another process holds the lock on this file (a left-over file nobody holds is not locked)."""
+    try:
+        handle = open(path, "rb")  # noqa: SIM115 - closed below
+    except OSError:
+        return False
+    try:
+        try_lock(handle)
+    except LockBusy:
+        return True
+    finally:
+        with contextlib.suppress(OSError):
+            unlock(handle)
+        handle.close()
+    return False
+
+
 def no_window() -> dict:
     """Popen arguments so a command-line child never opens a console window on Windows."""
     return {"creationflags": CREATE_NO_WINDOW} if WINDOWS else {}
@@ -130,6 +163,8 @@ def app_data(env: dict | None = None) -> Path:
     `$XDG_DATA_HOME/app.neuralloop.books` (`~/.local/share/…`).
     """
     env = os.environ if env is None else env
+    if env.get("NEURALLOOP_HOME"):  # the app's own override (tests, a second library)
+        return Path(env["NEURALLOOP_HOME"])
     if WINDOWS:
         base = env.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
         return Path(base) / WINDOWS_APP_FOLDER

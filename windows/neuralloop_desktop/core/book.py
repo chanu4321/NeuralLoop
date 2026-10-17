@@ -242,7 +242,7 @@ def load(folder: Path) -> dict | None:
 
 def file_in(folder: Path, relative: str | None) -> Path | None:
     """A file the book points at, only if it's inside the book's folder (BookFiles.url)."""
-    if not relative or relative.startswith(("/", "\\")) or ":" in relative:
+    if not relative or relative.startswith("/") or "\\" in relative or ":" in relative or "\x00" in relative:
         return None
     root = folder.resolve()
     try:

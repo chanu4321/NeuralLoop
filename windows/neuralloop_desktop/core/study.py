@@ -59,7 +59,7 @@ def compare(typed: str, mind: dict) -> dict:
     return {"rows": rows, "lines": lines, "percent": percent}
 
 
-# Plain math: models sometimes write LaTeX ("$M \times N$"); show it as plain text ("M × N").  # noqa: RUF003
+# Plain math: models sometimes write LaTeX ("$M \times N$"); show it as plain text.
 
 SYMBOLS = [
     ("\\times", "×"),
@@ -244,3 +244,38 @@ def cover_index(title: str, count: int) -> int:
     if total >= 1 << 63:  # Swift's Int wraps around; abs of the signed value
         total -= 1 << 64
     return abs(total) % count
+
+
+def shelf_summary(entries: list[dict], now_ms: float) -> dict:
+    """What the shelf's greeting and the tray panel show (ShelfSummary): where you left off, cards ready, this
+    week's study time and closed loops, and the books being prepared. `entries`: {id, book, progress,
+    preparing}."""
+    week_ago = now_ms - 7 * loop.DAY_MS
+    summary = {"resume": None, "dueCards": 0, "weekSeconds": 0.0, "loopsClosedThisWeek": 0, "preparing": []}
+    latest = 0.0
+    for entry in entries:
+        if entry.get("preparing"):
+            summary["preparing"].append(entry["id"])
+        b, p = entry.get("book"), entry["progress"]
+        if not b:
+            continue
+        due = loop.due_cards(b["chapters"], p, now_ms)
+        summary["dueCards"] += sum(1 for c in due if c["id"] in p["cards"])
+        for back in range(7):
+            summary["weekSeconds"] += p["log"].get(day_key(now_ms - back * loop.DAY_MS), 0.0)
+        summary["loopsClosedThisWeek"] += sum(
+            1 for steps in p["loop"].values() if steps.get("space", 0) > week_ago and "closedShown" in steps
+        )
+        last = p.get("last")
+        if last and p["updatedAt"] > latest:
+            chapter = next((c for c in b["chapters"] if c["n"] == last["n"]), None)
+            stage = loop.next_stage(p, last["n"]) or (last["stage"] if last["stage"] in loop.STAGES else None)
+            if chapter and stage:
+                latest = p["updatedAt"]
+                summary["resume"] = {
+                    "id": entry["id"],
+                    "n": chapter["n"],
+                    "title": chapter["title"],
+                    "stage": stage,
+                }
+    return summary
