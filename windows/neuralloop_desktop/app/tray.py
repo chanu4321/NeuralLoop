@@ -1,6 +1,5 @@
-"""Pip in the notification area (the Mac's menu bar Pip): open the library or Pip's panel, review cards,
-pick up
-where you left off, pause nudges until tomorrow, or quit. Closing the window keeps Pip here."""
+"""Pip in the notification area (the Mac's menu bar Pip): open the library or Pip's panel, review cards, pick
+up where you left off, pause nudges until tomorrow, or quit. Closing the window keeps Pip here."""
 
 import time
 from collections.abc import Callable

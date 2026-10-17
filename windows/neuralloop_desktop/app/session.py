@@ -1,7 +1,6 @@
 """One open book (BookSession.swift): its data, this device's progress, the study clock, and the steps that
-complete
-themselves from what the person really did (spec 09). Every change saves progress.json at once (small,
-atomic)."""
+complete themselves from what the person really did (spec 09). Every change saves progress.json at once
+(small, atomic)."""
 
 import json
 import threading

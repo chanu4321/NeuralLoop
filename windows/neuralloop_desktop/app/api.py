@@ -1,9 +1,7 @@
 """What the window can ask for (pywebview's js_api): `window.pywebview.api.<name>(...)` in the page.
 
 Every method returns plain JSON. Rules stay in `core`; this only gathers, calls, and shapes. Push updates go
-the
-other way through `emit` (the shelf changed, a progress line, a message).
-"""
+the other way through `emit` (the shelf changed, a progress line, a message)."""
 
 import contextlib
 import json
@@ -189,8 +187,7 @@ class Api:
 
     def reading_plan(self, book_id: str, n: int) -> dict | None:
         """A chapter's "pages" for reading time: ~300-word sections of text, or the PDF's pages, with what
-        each
-        needs (max(6 s, its words at 600 a minute))."""
+        each needs (max(6 s, its words at 600 a minute))."""
         session = self._session(book_id)
         chapter = session.chapter(n) if session else None
         if not chapter:

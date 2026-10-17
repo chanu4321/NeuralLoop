@@ -1,8 +1,6 @@
-"""What's going on at this PC right now, for Silly mode's big Pip (NudgeDelivery's NudgeMoment): it only
-shows when
-the screen isn't locked, nothing full-screen is in front (a game, a video, a presentation), and no app is
-using the
-microphone (a call or a meeting is likely). Otherwise the nudge stays a notification.
+"""What's going on at this PC right now, for Silly mode's big Pip (NudgeDelivery's NudgeMoment): it only shows
+when the screen isn't locked, nothing full-screen is in front (a game, a video, a presentation), and no app is
+using the microphone (a call or a meeting is likely). Otherwise the nudge stays a notification.
 
 Windows answers the first two through SHQueryUserNotificationState and the third through the privacy settings'
 own record of which apps are using the microphone right now. Elsewhere nothing is known, which reads as calm.

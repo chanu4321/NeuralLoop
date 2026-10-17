@@ -1,8 +1,7 @@
 """The person's API keys, in Windows Credential Manager (through `keyring`); never in ai.json, logs, or argv.
 
-Elsewhere (developing on Linux or macOS) keyring uses that system's own store. With no store at all, keys
-live only
-in memory for this session, and Settings says so."""
+Elsewhere (developing on Linux or macOS) keyring uses that system's own store. With no store at all, keys live
+only in memory for this session, and Settings says so."""
 
 import contextlib
 import threading

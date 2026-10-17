@@ -1,11 +1,8 @@
 """Notifications (Notifier.swift) and how a nudge arrives (Nudger.send).
 
 Notifications are Windows toasts (through windows-toasts) that open the book they're about when clicked;
-without
-that package, the tray icon's own balloon. A silly nudge shows the big Pip with its sound when nothing else
-is going
-on (`nudges.player`); a test from Settings is always heard.
-"""
+without that package, the tray icon's own balloon. A silly nudge shows the big Pip with its sound when nothing
+else is going on (`nudges.player`); a test from Settings is always heard."""
 
 import contextlib
 import threading

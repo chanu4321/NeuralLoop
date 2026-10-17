@@ -2,9 +2,8 @@
 
 It serves the window's files, Pip's poses and fonts (the pipeline's own), a book's media (with byte ranges, so
 podcasts and videos can seek), PDF chapter pages as pictures, and Silly mode's sounds (converted from the
-Mac's
-.caf once, `core.caf`). A book's files are served only from inside that book's folder; anything else is a 404.
-"""
+Mac's .caf once, `core.caf`). A book's files are served only from inside that book's folder; anything else is
+a 404."""
 
 import contextlib
 import json

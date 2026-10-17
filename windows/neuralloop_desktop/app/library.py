@@ -1,10 +1,8 @@
 """The shelf (Library.swift): books in the library folder, adding a book (which starts the pipeline), live
-progress,
-and the background loop that keeps it all current: resuming unfinished books just ahead of the reader,
-NotebookLM's usage, "chapter ready" notifications, and Pip's nudges.
+progress, and the background loop that keeps it all current: resuming unfinished books just ahead of the
+reader, NotebookLM's usage, "chapter ready" notifications, and Pip's nudges.
 
-Thread-safe: the window's bridge, pipeline runs, and the background loop all call in.
-"""
+Thread-safe: the window's bridge, pipeline runs, and the background loop all call in."""
 
 import contextlib
 import datetime as dt
@@ -730,9 +728,8 @@ class Library:
 
 
 def stop_run_elsewhere(folder: Path) -> None:
-    """A run this app didn't start (the command line, or before a relaunch): its pid is in `.running`,
-    trusted only
-    while that run holds the lock."""
+    """A run this app didn't start (the command line, or before a relaunch): its pid is in `.running`, trusted
+    only while that run holds the lock."""
     lock = folder / ".running"
     if not portable.is_locked(lock):
         return
