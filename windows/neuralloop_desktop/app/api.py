@@ -428,6 +428,8 @@ class Api:
         code = runner.stream(["--signin"], heard, cancel=self._sign_in_cancel)
         self._library.settings_changed()
         account = self.account()
+        if account.get("signedIn"):
+            self._library.refresh_usage(force=True)
         return {
             "ok": code == 0,
             "account": account,
@@ -441,7 +443,12 @@ class Api:
 
     def sign_out(self) -> dict:
         runner.once(["--signout"], timeout=60)
+        self._library.usage = {"known": False}
         return self.account()
+
+    def usage(self, fresh: bool = False) -> dict | None:
+        """NotebookLM's allowance for Settings → Account; `fresh` reads it now instead of the last check."""
+        return self._library.refresh_usage(force=fresh)
 
     # Settings: nudges.
 

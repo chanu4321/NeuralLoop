@@ -411,7 +411,8 @@ async function accountPage() {
   const who = el("div", { class: "row" }, el("span", { class: "spinner" }), "Checking your Google account…");
   const google = card("Google account", el("p", { class: "small muted" }, "One sign-in for NotebookLM, which makes podcasts, videos, and study material with your Google account."), who);
   col.append(google);
-  const usage = card("NotebookLM's allowance", usageView(NL.shelf.usage));
+  const usageBody = el("div", { class: "row" }, el("span", { class: "spinner" }), "Asking NotebookLM…");
+  const usage = card("NotebookLM's allowance", usageBody);
   col.append(usage);
   const info = await NL.api.library_info();
   col.append(card("Your library", el("p", { class: "small muted" }, `Your books take ${info.text} on this PC, in ${info.folder}.`),
@@ -423,6 +424,7 @@ async function accountPage() {
   NL.api.account().then(account => {
     who.replaceChildren();
     if (account.signedIn) {
+      NL.api.usage(true).then(u => usageBody.replaceWith(usageView(u, true)));
       who.append(el("span", { class: "ok" }, "●"), el("span", {}, `Signed in as ${account.email || "you"}`), el("span", { class: "spacer" }),
         btn("Sign out", async () => { await NL.api.sign_out(); go({ kind: "settings", page: "account" }); }, "small"));
     } else {
@@ -434,6 +436,7 @@ async function accountPage() {
         if (result.ok) go({ kind: "settings", page: "account" });
         else { signIn.disabled = false; status.textContent = result.message || "Sign-in didn't finish."; }
       }, "primary");
+      usageBody.replaceWith(usageView(null, false));
       who.append(el("span", { class: "faint" }, "○"), el("span", {}, "Not signed in"), el("span", { class: "spacer" }), signIn);
       who.after(status);
     }
@@ -441,8 +444,9 @@ async function accountPage() {
   return col;
 }
 
-function usageView(usage) {
-  if (!usage || !usage.known) return el("p", { class: "small muted" }, "Sign in with Google to see how much NotebookLM can still make.");
+function usageView(usage, signedIn) {
+  if (!signedIn) return el("p", { class: "small muted" }, "Sign in with Google to see how much NotebookLM can still make.");
+  if (!usage || !usage.known) return el("p", { class: "small muted" }, "NotebookLM didn't say just now. Pip asks again every few minutes.");
   const meter = (label, w) => w ? el("div", { class: "meter" }, el("div", { class: "row" }, el("h3", {}, `${Math.round(w.remaining)}%`), el("span", { class: "small faint" }, "left")),
     progressBar(w.remaining / 100), el("span", { class: "tiny faint" }, `${label} · resets ${new Date(w.resetsAt).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`)) : "";
   return el("div", { class: "row wrap", style: "gap:24px" }, meter("Five hours", usage.fiveHour), meter("This week", usage.weekly),

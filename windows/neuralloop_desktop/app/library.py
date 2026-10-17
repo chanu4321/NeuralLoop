@@ -142,18 +142,23 @@ class Library:
                 self.resume_unfinished()
                 self.nudge_tick()
 
-    def refresh_usage(self, force: bool = False) -> None:
+    def refresh_usage(self, force: bool = False) -> dict | None:
+        """NotebookLM's allowance, read at most every five minutes (or now, when `force`: the account page, a
+        sign-in or sign-out)."""
         if not force and time.time() - self.usage_checked < 300:
-            return
+            return self.usage
         # Every NotebookLM check rotates Google's session cookie: leave a run in the middle of a podcast
         # alone.
         if not force and any(e["preparing"] for e in self.entries()):
-            return
+            return self.usage
         self.usage_checked = time.time()
         _, lines = runner.once(["--usage"], timeout=60)
         for line in lines:
             if parsed := prep.parse_usage(line):
                 self.usage = parsed
+        with contextlib.suppress(Exception):  # the window shows it next time it asks
+            self.emit("shelf", self.shelf())
+        return self.usage
 
     # Looking at the shelf.
 

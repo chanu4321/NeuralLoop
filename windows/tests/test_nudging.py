@@ -170,3 +170,34 @@ def test_the_big_pips_window_closes_when_pip_is_done(monkeypatch, tmp_path):
     api.hide_big_pip()
     api.hide_big_pip()  # nothing left to close
     assert Window.closed == 1 and "pip" not in api._windows
+
+
+def test_signing_in_shows_the_allowance_without_waiting(monkeypatch, tmp_path):
+    """The allowance was read at launch (signed out) and then only every five minutes; the account page and
+    a sign-in now ask for it fresh."""
+    from neuralloop_desktop.app import runner
+    from neuralloop_desktop.app.api import Api
+
+    monkeypatch.setenv("NEURALLOOP_HOME", str(tmp_path))
+    report = {"known": True, "available": True, "fiveHour": {"remaining": 80, "resetsAt": ""},
+              "weekly": {"remaining": 95, "resetsAt": ""}, "podcast": True, "video": False}  # fmt: skip
+    asked = []
+
+    def once(arguments, timeout=60, stdin=None):
+        asked.append(arguments[0])
+        if arguments[0] == "--usage":
+            return 0, ["NotebookLM usage: " + json.dumps(report)]
+        if arguments[0] == "--signin":
+            return 0, []
+        return 0, ['Account: {"signedIn": true, "email": "a@b.c"}']
+
+    monkeypatch.setattr(runner, "once", once)
+    monkeypatch.setattr(runner, "stream", lambda arguments, heard, cancel=None: 0)
+    library = Library()
+    library.usage, library.usage_checked = {"known": False}, __import__("time").time()  # read at launch
+    api = Api(library, "http://127.0.0.1:1/token")
+    assert api.usage(fresh=True)["fiveHour"]["remaining"] == 80
+
+    library.usage = {"known": False}
+    api.sign_in()
+    assert library.usage["known"] is True and asked.count("--usage") == 2
