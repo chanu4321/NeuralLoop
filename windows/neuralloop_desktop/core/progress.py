@@ -8,10 +8,11 @@ last}). Reading it is lenient: one odd entry is skipped, never the rest. Times a
 
 import contextlib
 import json
-import os
 import time
 from pathlib import Path
 from typing import Any
+
+from neuralloop_books import portable
 
 from . import coverage
 from .jsonish import dumps, integer, number
@@ -250,4 +251,4 @@ def save(p: dict, folder: Path, own_log: dict | None = None) -> None:
         mine["log"] = dict(own_log)
     tmp = folder / "progress.json.tmp"
     tmp.write_bytes(encode(mine))
-    os.replace(tmp, folder / "progress.json")
+    portable.replace(tmp, folder / "progress.json")

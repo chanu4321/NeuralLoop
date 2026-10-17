@@ -14,6 +14,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import IO
 
@@ -88,6 +89,22 @@ def is_locked(path: Path) -> bool:
             unlock(handle)
         handle.close()
     return False
+
+
+def replace(
+    source: str | os.PathLike, target: str | os.PathLike, tries: int = 40, wait: float = 0.05
+) -> None:
+    """`os.replace`, waiting out a moment when another process has the target open: Windows refuses to
+    replace an open file (the app reading book.json while the pipeline writes it), and the reader lets go
+    within a moment. After about two seconds the error stands."""
+    for attempt in range(tries):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            if attempt == tries - 1:
+                raise
+            time.sleep(wait)
 
 
 def no_window() -> dict:

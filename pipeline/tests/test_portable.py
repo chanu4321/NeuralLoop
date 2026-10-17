@@ -159,3 +159,33 @@ def test_the_apps_home_override_wins_everywhere(monkeypatch):
     for windows in (True, False):
         monkeypatch.setattr(portable, "WINDOWS", windows)
         assert portable.app_data({"NEURALLOOP_HOME": "/tmp/nl", "APPDATA": "C:/x"}).as_posix() == "/tmp/nl"
+
+
+def test_replace_waits_out_a_reader_on_windows(tmp_path, monkeypatch):
+    """Windows refuses to replace a file someone has open; the reader lets go in a moment."""
+    source, target = tmp_path / "a.tmp", tmp_path / "a.json"
+    source.write_text("new")
+    target.write_text("old")
+    real = portable.os.replace
+    refusals = []
+
+    def busy_then_free(a, b):
+        if len(refusals) < 3:
+            refusals.append(1)
+            raise PermissionError(13, "Access is denied")
+        real(a, b)
+
+    monkeypatch.setattr(portable.os, "replace", busy_then_free)
+    monkeypatch.setattr(portable.time, "sleep", lambda s: None)
+    portable.replace(source, target)
+    assert target.read_text() == "new" and len(refusals) == 3
+
+
+def test_replace_gives_up_on_a_file_that_stays_locked(tmp_path, monkeypatch):
+    def always_busy(a, b):
+        raise PermissionError(13, "Access is denied")
+
+    monkeypatch.setattr(portable.os, "replace", always_busy)
+    monkeypatch.setattr(portable.time, "sleep", lambda s: None)
+    with pytest.raises(PermissionError):
+        portable.replace(tmp_path / "a", tmp_path / "b")

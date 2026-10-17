@@ -16,6 +16,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+from neuralloop_books import portable
+
 from ..core import book as books
 from ..core import caf, pipeline_run
 from . import paths
@@ -125,7 +127,7 @@ class Server:
                 cache.parent.mkdir(exist_ok=True)
                 partial = cache.with_suffix(".part")
                 image.save(partial, format="PNG", optimize=True)
-                partial.replace(cache)
+                portable.replace(partial, cache)
                 document.close()
             except Exception:
                 return None
@@ -147,7 +149,7 @@ class Server:
             cache.parent.mkdir(parents=True, exist_ok=True)
             partial = cache.with_suffix(".part")
             partial.write_bytes(sound)
-            partial.replace(cache)
+            portable.replace(partial, cache)
         except (OSError, caf.NotIMA4, struct.error):
             return None
         return cache

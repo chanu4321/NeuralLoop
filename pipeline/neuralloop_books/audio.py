@@ -8,6 +8,8 @@ import subprocess
 import wave
 from pathlib import Path
 
+from . import portable
+
 # Rumik OSS-1 is trained on 30-second utterances; ~400 characters stays under that.
 SPEECH_LIMIT = 400
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
@@ -117,5 +119,5 @@ def _encode_aac(wav: Path, target: Path) -> bool:
         for ready in resampler.resample(None):
             out.mux(stream.encode(ready))
         out.mux(stream.encode(None))
-    partial.replace(target)
+    portable.replace(partial, target)
     return True

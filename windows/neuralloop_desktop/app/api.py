@@ -5,7 +5,6 @@ the other way through `emit` (the shelf changed, a progress line, a message)."""
 
 import contextlib
 import json
-import os
 import subprocess
 import sys
 import threading
@@ -372,7 +371,7 @@ class Api:
         target.parent.mkdir(parents=True, exist_ok=True)
         tmp = target.with_suffix(".tmp")
         tmp.write_bytes(aiconfig.encode(config))
-        os.replace(tmp, target)
+        portable.replace(tmp, target)
         for name, value in (choices.get("keys") or {}).items():
             if name in pipeline_run.KEY_NAMES and isinstance(value, str) and value:
                 keys.save(name, value)

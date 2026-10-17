@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from .. import activity, audio, context, convert, prompts
+from .. import activity, audio, context, convert, portable, prompts
 from ..chapters import chapter_size
 from ..config import CONTEXT_CHARS, audio_length
 from ..notebook import UnusableAnswer
@@ -418,7 +418,7 @@ def _write_json(path: Path, data: dict) -> None:
     """Atomic, so the app never reads half a transcript."""
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(path)
+    portable.replace(tmp, path)
 
 
 def _remove(paths: list[Path]) -> None:

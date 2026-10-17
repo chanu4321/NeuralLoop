@@ -3,10 +3,11 @@ leniently."""
 
 import contextlib
 import json
-import os
 import threading
 from pathlib import Path
 from typing import Any
+
+from neuralloop_books import portable
 
 
 class JsonFile:
@@ -26,7 +27,7 @@ class JsonFile:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.path.with_name(self.path.name + ".tmp")
             tmp.write_text(json.dumps(data, sort_keys=True, indent=1, ensure_ascii=False), encoding="utf-8")
-            os.replace(tmp, self.path)
+            portable.replace(tmp, self.path)
 
     def get(self, key: str, default: Any = None) -> Any:
         return self.read().get(key, default)
