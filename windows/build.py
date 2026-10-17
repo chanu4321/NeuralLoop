@@ -148,6 +148,8 @@ def main() -> int:
     parser.add_argument("--icons", action="store_true", help="only draw the icons and version info")
     parser.add_argument("--no-check", action="store_true", help="skip running the built pipeline")
     args = parser.parse_args()
+    for stream in (sys.stdout, sys.stderr):  # the pipeline's lines (✓) print on a cp1252 console too
+        stream.reconfigure(encoding="utf-8", errors="replace")
     number = version()
     draw_icons()
     version_info(number)
