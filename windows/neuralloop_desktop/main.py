@@ -26,7 +26,36 @@ def main(argv: list[str] | None = None) -> int:
         sys.argv = [argv[1], *argv[2:]]
         runpy.run_module(argv[1], run_name="__main__", alter_sys=True)
         return 0
+    if argv[:1] == ["--browser"]:
+        return run_browser()
     return run_app()
+
+
+def run_browser() -> int:
+    """Development: the app in an ordinary browser (no tray, no native dialogs), for working on the window."""
+    import time
+    import webbrowser
+
+    from .app.api import Api
+    from .app.library import Library
+    from .app.server import Server
+
+    server = Server()
+    library = Library()
+    api = Api(library, server.base)
+    api._events = server.events
+    library.emit = api._emit
+    server.rpc = api
+    server.start()
+    library.start()
+    url = f"{server.base}/ui/index.html?browser=1"
+    print(f"NeuralLoop is at {url}", flush=True)
+    webbrowser.open(url)
+    try:
+        while True:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        return 0
 
 
 def run_app() -> int:

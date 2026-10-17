@@ -33,6 +33,7 @@ class Api:
         self._lock = threading.Lock()
         self._windows: dict = {}
         self._sign_in_cancel: threading.Event | None = None
+        self._events: list | None = None
 
     # Plumbing (names starting with _ are never exposed to the page).
 
@@ -504,12 +505,19 @@ class Api:
             if book_id:
                 self._emit("open", book_id)
 
+    def hide_big_pip(self) -> None:
+        window = self._windows.get("pip")
+        if window:
+            window.hide()
+
     def hide_panel(self) -> None:
         panel = self._windows.get("panel")
         if panel:
             panel.hide()
 
     def _emit(self, name: str, data) -> None:
+        if self._events is not None:  # development: the browser asks for events
+            self._events.append(json.loads(json.dumps({"name": name, "data": data}, default=str)))
         payload = json.dumps({"name": name, "data": data}, default=str)
         for window in list(self._windows.values()):
             with contextlib.suppress(Exception):  # a window that's closing doesn't stop the others

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pip</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="../assets/pip-poses.js"></script>
+  <style>
+    html, body { background: transparent !important; overflow: hidden; }
+    .big { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+      transform: scale(.2); opacity: 0; transition: transform .45s cubic-bezier(.3, 1.5, .5, 1), opacity .3s; }
+    .big.in { transform: scale(1); opacity: 1; }
+    .emoji { font-size: 64px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.2)); }
+    .bubble { background: var(--surface); color: var(--ink); border-radius: 18px; padding: 10px 16px; max-width: 360px; text-align: center;
+      font-family: var(--display); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+    .bubble small { display: block; font-family: var(--body); font-weight: 400; color: var(--ink2); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="big" id="big" role="alert" aria-live="assertive"></div>
+  <script>
+    "use strict";
+    // Silly mode's big Pip: zooms in, plays the sound, and shrinks away when it ends. Clicking it opens the library.
+    if (window.PIP_CSS) { const s = document.createElement("style"); s.textContent = window.PIP_CSS; document.head.append(s); }
+    let hideTimer = null, audio = null;
+    function hide() {
+      const big = document.getElementById("big");
+      big.classList.remove("in");
+      if (audio) { audio.pause(); audio = null; }
+      setTimeout(() => window.pywebview && window.pywebview.api.hide_big_pip(), 350);
+    }
+    window.BigPip = {
+      show(nudge) {
+        const big = document.getElementById("big");
+        const pose = nudge.mood === "shocked" ? "shocked" : "sad";
+        const emoji = [...nudge.title][0];
+        const words = nudge.title.slice(emoji.length).trim();
+        big.innerHTML = "";
+        const e = document.createElement("div"); e.className = "emoji"; e.textContent = emoji;
+        const p = document.createElement("div"); p.className = "pip"; p.style.width = "220px"; p.innerHTML = (window.PIP || {})[pose] || "";
+        const b = document.createElement("div"); b.className = "bubble"; b.textContent = words;
+        const small = document.createElement("small"); small.textContent = nudge.body; b.append(small);
+        big.append(e, p, b);
+        requestAnimationFrame(() => big.classList.add("in"));
+        clearTimeout(hideTimer);
+        audio = new Audio(nudge.sound);
+        audio.volume = Math.max(0, Math.min(1, nudge.volume ?? 0.8));
+        audio.onended = () => { hideTimer = setTimeout(hide, 600); };
+        audio.play().catch(() => { hideTimer = setTimeout(hide, 6000); });
+        hideTimer = setTimeout(hide, 20000);  // a sound that never ends never keeps Pip up
+      },
+    };
+    document.getElementById("big").onclick = () => { hide(); window.pywebview && window.pywebview.api.show_main(null); };
+  </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ Mac's
 """
 
 import contextlib
+import json
 import mimetypes
 import re
 import secrets
@@ -64,6 +65,8 @@ class Server:
         self.port = self.httpd.server_address[1]
         self._render_lock = threading.Lock()
         self.on_show = lambda: None  # a second launch asks this one to come forward
+        self.rpc = None  # development (--browser): the window's bridge over HTTP, and its events
+        self.events: list = []
 
     @property
     def base(self) -> str:
@@ -177,7 +180,41 @@ class Server:
                 self._serve(body=False)
 
             def do_GET(self) -> None:
+                if server.rpc is not None and self.path == f"/{server.token}/events" and self._trusted():
+                    events, server.events[:] = list(server.events), []
+                    return self._json(events)
                 self._serve(body=True)
+
+            def do_POST(self) -> None:
+                """Development only: `/rpc/<method>` calls the window's bridge (never its private names)."""
+                prefix = f"/{server.token}/rpc/"
+                if server.rpc is None or not self.path.startswith(prefix) or not self._trusted():
+                    return self._deny(404)
+                name = self.path[len(prefix) :]
+                method = (
+                    getattr(server.rpc, name, None)
+                    if name.isidentifier() and not name.startswith("_")
+                    else None
+                )
+                if not callable(method):
+                    return self._deny(404)
+                length = int(self.headers.get("Content-Length") or 0)
+                try:
+                    args = json.loads(self.rfile.read(length) or b"[]")
+                    return self._json({"result": method(*args)})
+                except Exception as error:
+                    return self._json({"error": str(error)})
+
+            def _trusted(self) -> bool:
+                return self.headers.get("Host") in (f"127.0.0.1:{server.port}", f"localhost:{server.port}")
+
+            def _json(self, value) -> None:
+                data = json.dumps(value, default=str).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
 
             def _serve(self, body: bool) -> None:
                 # Only this app's own window: the right host (no DNS rebinding) and the right token.
