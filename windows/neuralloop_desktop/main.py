@@ -26,6 +26,8 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] == ["--pipeline"]:
         from neuralloop_books.cli import main as pipeline
 
+        utf8_output()
+
         sys.argv = ["neuralloop", *argv[1:]]
         return pipeline() or 0
     if argv[:1] == ["-m"] and len(argv) > 1 and argv[1].split(".")[0] in RUNNABLE_MODULES:
@@ -35,6 +37,15 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] == ["--browser"]:
         return run_browser()
     return run_app(background=argv[:1] == ["--background"])
+
+
+def utf8_output() -> None:
+    """The pipeline's lines are UTF-8 whatever the console's code page (the app reads them as UTF-8, and
+    cp1252 has no ✓). The installed programs may not read PYTHONIOENCODING, so it's set here."""
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, "reconfigure"):
+            with contextlib.suppress(ValueError, OSError):  # a stream that can't change: leave it as it is
+                stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 def is_pipeline_program() -> bool:

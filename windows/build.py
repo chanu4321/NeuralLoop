@@ -109,7 +109,7 @@ def check_build() -> None:
         out = Path(home) / "sample"
         done = subprocess.run(
             [str(APP / "nl-book.exe"), "--dry-run", "--out", str(out), "--speech", "fake"],
-            env=env, capture_output=True, text=True, encoding="utf-8", timeout=600,
+            env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600,
         )  # fmt: skip
         print(done.stdout[-2000:])
         if done.returncode != 0 or not (out / "book.json").exists():

@@ -63,3 +63,22 @@ def test_from_the_repo_it_runs_nl_book_py():
     command = runner.command()
     assert command[0] == sys.executable
     assert command[1].replace("\\", "/").endswith("pipeline/nl_book.py")
+
+
+def test_the_pipeline_always_writes_utf8(installed, monkeypatch):
+    """The app reads nl-book.exe's output as UTF-8; a console code page (cp1252) can't even write ✓."""
+    import io
+
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdout", console)
+
+    def progress():
+        print("  ✓ chapter 1 quiz (0s)")
+        return 0
+
+    monkeypatch.setattr("neuralloop_books.cli.main", progress)
+    installed("nl-book.exe")
+    assert entry.main(["--dry-run"]) == 0
+    sys.stdout.flush()
+    assert "✓ chapter 1".encode() in raw.getvalue()
