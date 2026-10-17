@@ -201,3 +201,29 @@ def test_signing_in_shows_the_allowance_without_waiting(monkeypatch, tmp_path):
     library.usage = {"known": False}
     api.sign_in()
     assert library.usage["known"] is True and asked.count("--usage") == 2
+
+
+def test_a_fresh_allowance_check_still_waits_while_a_book_is_being_prepared(monkeypatch, tmp_path):
+    """Every NotebookLM command rotates Google's session cookie; one alongside a run can sign it out."""
+    from neuralloop_desktop.app import runner
+
+    monkeypatch.setenv("NEURALLOOP_HOME", str(tmp_path))
+    asked = []
+    monkeypatch.setattr(
+        runner, "once", lambda arguments, timeout=60, stdin=None: asked.append(arguments) or (0, [])
+    )
+    library = Library()
+    library.usage = {"known": True}
+    monkeypatch.setattr(library, "entries", lambda: [{"preparing": True}])
+    assert library.refresh_usage(force=True) == {"known": True} and asked == []
+    monkeypatch.setattr(library, "entries", lambda: [{"preparing": False}])
+    library.refresh_usage(force=True)
+    assert asked == [["--usage"]]
+
+
+def test_an_expired_sign_in_comes_through_from_the_allowance_check():
+    from neuralloop_desktop.core import prep
+
+    line = 'NotebookLM usage: {"known": false, "problem": "expired (AUTH_ERROR)", "needsSignIn": true}'
+    assert prep.parse_usage(line)["needsSignIn"] is True
+    assert prep.parse_usage('NotebookLM usage: {"known": true}')["needsSignIn"] is False

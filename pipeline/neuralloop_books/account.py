@@ -182,7 +182,10 @@ def usage() -> dict:
     except (OSError, subprocess.TimeoutExpired) as error:
         return {"known": False, "problem": _last_line(str(error)) or type(error).__name__}
     if result.returncode != 0:
-        return {"known": False, "problem": _problem(result)}
+        problem = _problem(result)
+        if "AUTH_ERROR" in problem:  # the saved session exists but Google no longer accepts it
+            return {"known": False, "problem": problem, "needsSignIn": True}
+        return {"known": False, "problem": problem}
     try:
         return _usage_summary(json.loads(result.stdout or "{}"))
     except (KeyError, TypeError, ValueError):  # a report in a shape we don't know: say we don't know

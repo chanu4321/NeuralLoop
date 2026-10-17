@@ -170,7 +170,11 @@ def test_usage_that_fails_says_what_notebooklm_answered(monkeypatch):
 
     monkeypatch.setattr(account.subprocess, "run", run)
     monkeypatch.setattr(account, "_cli", lambda: ["/venv/bin/python", "-m", "notebooklm"])
-    assert account.usage() == {"known": False, "problem": "Session expired — sign in again (AUTH_ERROR)"}
+    assert account.usage() == {
+        "known": False,
+        "problem": "Session expired — sign in again (AUTH_ERROR)",
+        "needsSignIn": True,
+    }
 
 
 def test_usage_that_fails_says_why(monkeypatch):

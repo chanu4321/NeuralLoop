@@ -424,9 +424,23 @@ async function accountPage() {
   NL.api.account().then(account => {
     who.replaceChildren();
     if (account.signedIn) {
-      NL.api.usage(true).then(u => usageBody.replaceWith(usageView(u, true)));
       who.append(el("span", { class: "ok" }, "●"), el("span", {}, `Signed in as ${account.email || "you"}`), el("span", { class: "spacer" }),
         btn("Sign out", async () => { await NL.api.sign_out(); go({ kind: "settings", page: "account" }); }, "small"));
+      NL.api.usage(true).then(u => {
+        usageBody.replaceWith(usageView(u, true));
+        if (!u || !u.needsSignIn) return;
+        // The saved session is still there, but Google no longer accepts it.
+        const status = el("span", { class: "small muted" }, "");
+        NL.on("signin", text => { status.textContent = text; });
+        const again = btn("Sign in again", async () => {
+          again.disabled = true; status.textContent = "A browser window is opening. Sign in there, then come back.";
+          const result = await NL.api.sign_in();
+          if (result.ok) go({ kind: "settings", page: "account" });
+          else { again.disabled = false; status.textContent = result.message || "Sign-in didn't finish."; }
+        }, "primary small");
+        who.replaceChildren(el("span", { class: "faint" }, "●"), el("span", {}, `${account.email || "Your"} sign-in has expired`), el("span", { class: "spacer" }), again);
+        who.after(status);
+      });
     } else {
       const status = el("span", { class: "small muted" }, "");
       NL.on("signin", text => { status.textContent = text; });
@@ -446,6 +460,7 @@ async function accountPage() {
 
 function usageView(usage, signedIn) {
   if (!signedIn) return el("p", { class: "small muted" }, "Sign in with Google to see how much NotebookLM can still make.");
+  if (usage && usage.needsSignIn) return el("p", { class: "small muted" }, "Google's sign-in for NotebookLM has expired. Sign in again above to see how much it can still make.");
   if (!usage || !usage.known) return el("div", { class: "col", style: "gap:4px" },
     el("p", { class: "small muted" }, "NotebookLM didn't say just now. Pip asks again every few minutes."),
     usage && usage.problem ? el("p", { class: "tiny faint" }, `NotebookLM said: ${usage.problem}`) : "");

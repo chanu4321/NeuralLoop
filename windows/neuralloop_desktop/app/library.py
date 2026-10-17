@@ -144,12 +144,11 @@ class Library:
 
     def refresh_usage(self, force: bool = False) -> dict | None:
         """NotebookLM's allowance, read at most every five minutes (or now, when `force`: the account page, a
-        sign-in or sign-out)."""
+        sign-in). Never while a book is being prepared, forced or not: every NotebookLM command rotates
+        Google's session cookie, and one alongside a run can leave the saved session signed out."""
         if not force and time.time() - self.usage_checked < 300:
             return self.usage
-        # Every NotebookLM check rotates Google's session cookie: leave a run in the middle of a podcast
-        # alone.
-        if not force and any(e["preparing"] for e in self.entries()):
+        if any(e["preparing"] for e in self.entries()):
             return self.usage
         self.usage_checked = time.time()
         _, lines = runner.once(["--usage"], timeout=60)

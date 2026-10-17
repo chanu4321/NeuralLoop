@@ -193,7 +193,7 @@ def parse_usage(line: str) -> dict | None:
     flags = {k: raw.get(k) is True for k in ("known", "available", "podcast", "video")}
     windows = {k: raw.get(k) if isinstance(raw.get(k), dict) else None for k in ("fiveHour", "weekly")}
     problem = raw.get("problem") if isinstance(raw.get("problem"), str) else ""
-    return flags | windows | {"problem": problem[:200]}
+    return flags | windows | {"problem": problem[:200], "needsSignIn": raw.get("needsSignIn") is True}
 
 
 def can_make(usage: dict, item: str) -> bool:
