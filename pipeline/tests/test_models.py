@@ -8,6 +8,8 @@ from neuralloop_books.models import QuotaError, SetupError
 from neuralloop_books.models.opencode import OpencodeModel
 from neuralloop_books.notebook import is_quota_error
 
+from .platforms import posix_only
+
 
 @pytest.fixture(autouse=True)
 def no_real_opencode_config(monkeypatch, tmp_path):
@@ -377,6 +379,7 @@ def _cli_model(mod, module, script, monkeypatch):
     return mod.HermesModel("m", executable=str(script), allow_tools=True)
 
 
+@posix_only
 @pytest.mark.parametrize("module", ["opencode", "hermes"])
 def test_a_cli_model_that_times_out_is_killed(tmp_path, monkeypatch, module):
     import importlib
@@ -390,6 +393,7 @@ def test_a_cli_model_that_times_out_is_killed(tmp_path, monkeypatch, module):
     assert _gone(pid_file)
 
 
+@posix_only
 @pytest.mark.parametrize("module", ["opencode", "hermes"])
 def test_a_cancelled_cli_model_is_killed(tmp_path, monkeypatch, module):
     import importlib

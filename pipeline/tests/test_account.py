@@ -6,6 +6,8 @@ import pytest
 
 from neuralloop_books import account
 
+from .platforms import posix_only
+
 
 @pytest.fixture(autouse=True)
 def login_through_run(monkeypatch, request):
@@ -223,6 +225,7 @@ def test_sign_in_says_it_is_getting_a_browser_only_the_first_time(monkeypatch, t
     assert not any("150 MB" in line for line in later)
 
 
+@posix_only
 def test_stopping_sign_in_closes_the_login_and_everything_it_opened(tmp_path):
     """The app stops a sign-in with SIGTERM ("Not now"); the login and the browser it started go too, not just
     Python."""
