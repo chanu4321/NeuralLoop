@@ -1,11 +1,12 @@
 # Third-party notices
 
 NeuralLoop's own code is licensed under the PolyForm Noncommercial License 1.0.0 (see `LICENSE`). It builds on, and the
-packaged Mac app bundles, the components below, each under its own license. Where a component restricts use, that
+packaged Mac and Windows apps bundle, the components below, each under its own license. Where a component restricts use, that
 restriction applies to anyone using the component through NeuralLoop.
 
 The licence texts referred to here are in `licenses/`. The packaged app carries `LICENSE`, this file, and `licenses/` in
-`NeuralLoop.app/Contents/Resources`, and its runtime carries them again in `Contents/Resources/runtime/licenses`.
+`NeuralLoop.app/Contents/Resources`, and its runtime carries them again in `Contents/Resources/runtime/licenses`. The
+Windows app carries them in `_internal` next to `NeuralLoop.exe`.
 
 ## Components with restrictions to know about
 
@@ -14,6 +15,7 @@ The licence texts referred to here are in `licenses/`. The packaged app carries 
 | **Rumik OSS-1** voices (`rumik-ai/rumik-oss-1-mlx-4bit`, `-8bit`), downloaded on first use | Podcast and explainer narration made on your Mac | **CC BY-NC 4.0** | **Non-commercial use only.** Anyone selling NeuralLoop, or using it commercially, needs a separate licence from Rumik or a different voice engine. |
 | **Google NotebookLM**, through `notebooklm-py` | The default way study material is made | Google's terms of service; `notebooklm-py` is MIT | `notebooklm-py` uses unofficial interfaces that can change at any time. Check Google's terms before any commercial use. |
 | **FFmpeg with x264 and x265**, inside PyAV | Encoding explainer videos | FFmpeg LGPL-3.0-or-later; x264 and x265 **GPL-2.0-or-later** | See "FFmpeg, x264 and x265" below. |
+| **phonemizer** and **espeak-ng** (Windows app only), through `kokoro-onnx` | Turning narration text into sounds for the Kokoro voices | **GPL-3.0-or-later** | They run inside the Windows pipeline's process (`nl-book.exe`). See "Bundled in the Windows app" below. |
 
 ## Nudge sounds
 
@@ -119,5 +121,37 @@ binaries described in this file were built from. If any of them stops working, o
 1011), whose own build scripts aren't public, open an issue on this repository and we will provide a complete copy of
 the corresponding source for those binaries, at no more than the cost of providing it, for at least three years after
 we last distributed a runtime containing them.
+
+## Bundled in the Windows app
+
+`python windows/build.py` (PyInstaller 6.22.3) puts one Python 3.12 and the packages pinned in
+`windows/requirements.txt` into `NeuralLoop\_internal`. Each package's licence ships in its `*.dist-info` folder there,
+except where noted. Beyond what the Mac's runtime has (`anthropic`, `openai`, `notebooklm-py`, `playwright`, PyAV,
+`pypdf`, `numpy`; see above; the Windows app downloads Chromium only when Chrome isn't installed):
+
+| Component | Version | License | Notes |
+|---|---|---|---|
+| **Kokoro-82M** voices (`kokoro-v1.0.int8.onnx`, `kokoro-v1.0.onnx`, `voices-v1.0.bin`), downloaded on first use and checked by SHA-256 | 1.0 | Apache-2.0 (`licenses/Apache-2.0.txt`) | By hexgrad (https://huggingface.co/hexgrad/Kokoro-82M); the ONNX files are kokoro-onnx's `model-files-v1.0` release. Not bundled. |
+| `kokoro-onnx` (Copyright thewh1teagle) | 0.6.1 | MIT | |
+| ONNX Runtime | 1.31.0 | MIT | Runs the Kokoro model. |
+| **phonemizer** (Copyright Mathieu Bernard and others, bootphon) | 3.4.0 | **GPL-3.0-or-later** (`licenses/GPL-3.0.txt`) | Source: https://github.com/bootphon/phonemizer/tree/v3.4.0 |
+| **espeak-ng**, the library and its `espeak-ng-data`, through `espeakng-loader` 0.2.4 | 1.52 | **GPL-3.0-or-later** (`licenses/GPL-3.0.txt`; the wheel carries no licence text) | Source: https://github.com/espeak-ng/espeak-ng/tree/1.52.0 and https://github.com/thewh1teagle/espeakng-loader |
+| pywebview (Copyright Roman Sirokov) | 6.2.1 | BSD-3-Clause | The window, drawn by Microsoft Edge WebView2, which is part of Windows and isn't bundled. |
+| pystray (Copyright Moses Palmér) | 0.19.5 | LGPL-3.0 (`licenses/LGPL-3.0.txt`) | Pip in the notification area. It ships as its own unmodified Python files, which can be replaced. |
+| Pillow | 13.0.0 | MIT-CMU | |
+| keyring | 25.7.0 | MIT | Saved keys go to Windows Credential Manager. |
+| Send2Trash | 2.1.0 | BSD-3-Clause | |
+| pypdfium2, with PDFium | 5.14.0 | Apache-2.0 or BSD-3-Clause; PDFium BSD-3-Clause (licences inside `pypdfium2_raw`) | PDF chapters shown as pages. |
+| windows-toasts, with PyWinRT | 1.3.1 | Apache-2.0; PyWinRT MIT | Notifications. |
+| PyInstaller's bootloader | 6.22.3 | GPL-2.0-or-later with the bootloader exception, which allows shipping it with any program | `NeuralLoop.exe` and `nl-book.exe` start through it. |
+
+phonemizer and espeak-ng are GPL-3.0-or-later and are loaded into `nl-book.exe` (the Windows pipeline), which also runs
+NeuralLoop's own pipeline code. Anyone distributing the Windows build should be comfortable with what the GPL asks of
+that combination; the Mac app doesn't include either. The Kokoro voices themselves are Apache-2.0, so unlike Rumik
+they allow commercial use. The source code offer above covers phonemizer and espeak-ng too.
+
+The Windows build's PyAV wheel carries its own FFmpeg build, from the same `pyav-ffmpeg` scripts ("FFmpeg, x264 and x265" above). On Windows
+the pipeline asks for Windows' own H.264 encoder (Media Foundation, `h264_mf`) right after VideoToolbox, so x264 is
+again only a last resort.
 
 Models that Ollama downloads (for example Qwen or Gemma) come with their own licenses, shown by Ollama.

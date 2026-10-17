@@ -14,18 +14,20 @@ OpenRouter, local Ollama, LM Studio or any OpenAI-compatible server, opencode, H
 **Listen & watch → Read → Recall → Map → Remember**. Chapters unlock one at a time; the book map grows as chapters are mapped.
 Pip, a cute red panda, lives in the menu bar and nudges gently (never guilt).
 
-Two parts, one repo:
+Three parts, one repo:
 
 | Part | Language | Path | Runs as |
 |---|---|---|---|
 | Book pipeline | Python 3.10+ | `pipeline` | `python pipeline/nl_book.py BOOK …` (the app runs it from its bundled runtime) |
 | Mac app | Swift 6 core + SwiftUI | `apple` | `NeuralLoop.app` (`make mac` to build and open, `make package` for the DMG) |
+| Windows app | Python core + pywebview (HTML/JS window) | `windows` | `NeuralLoop.exe` + `nl-book.exe` (`python windows/build.py` on Windows, `make windows-dev` for the window in a browser) |
 
 ## Golden rules
 
 1. **Test first.** Write the failing test, watch it fail, make it pass, refactor. Every task in `docs/specs` lists its tests.
-2. **Logic stays pure and tested; screens stay thin.** Pure logic belongs in `pipeline/neuralloop_books/*.py` and
-   `apple/Sources/NeuralLoopCore/*.swift` (tested with Swift Testing in `apple/Tests`). SwiftUI views (`apple/App/Views`) and
+2. **Logic stays pure and tested; screens stay thin.** Pure logic belongs in `pipeline/neuralloop_books/*.py`,
+   `apple/Sources/NeuralLoopCore/*.swift` (tested with Swift Testing in `apple/Tests`), and
+   `windows/neuralloop_desktop/core/*.py` (the same rules for Windows; a rule changed in one core changes in the other, with its tests). SwiftUI views (`apple/App/Views`) and
    services (`apple/App/Services`) only render, wire events, and do I/O.
 3. **Never hand-edit generated files:** `apple/App/Resources/pip-rig.json`, `apple/App/Resources/PipLayers/*.png` (each layer at 3x, redrawn only when its art hash changes), and `pipeline/neuralloop_books/assets/pip-poses.js`
    (run `make pip`, i.e. `python design/pip/generate_pip.py`; animations are data in `ANIM` there, feeding both); `apple/App/Resources/AppIcon.icns` (`python design/pip/make_app_icon.py`);
@@ -51,16 +53,18 @@ Two parts, one repo:
 ```bash
 make setup      # once: creates .venv, installs hash-locked dev tools (scripts/dev-requirements.txt) + Chromium
 make test       # all tests (pytest, swift test)
-make lint       # ruff check + format over pipeline/ scripts/ design/ (root ruff.toml), shellcheck if installed
+make lint       # ruff check + format over pipeline/ scripts/ design/ windows/ (root ruff.toml), shellcheck if installed
 make check      # lint + test + check-generated (Pip rig/layers, icons, DMG background are current) (CI runs this plus an Xcode build and a Pip staleness check: .github/workflows/check.yml)
 make mac        # build and open the Mac app (needs Xcode and XcodeGen: brew install xcodegen)
 make package    # dist/NeuralLoop-<version>.dmg with the runtime inside (unsigned: "Open Anyway" once)
 make runtime    # just the self-contained runtime (build/runtime)
 make pip        # regenerate Pip's artwork
+make windows    # on Windows: dist/NeuralLoop-<version>-setup.exe and a zip (windows/build.py)
+make windows-dev  # the Windows app's window in a browser, on any OS
 python pipeline/nl_book.py --dry-run --out /tmp/demo   # whole pipeline offline with a practice model and voices
 ```
 
-Per part: `cd pipeline && pytest -q` · `cd apple && swift test`.
+Per part: `cd pipeline && pytest -q` · `cd apple && swift test` · `cd windows && pytest -q`.
 
 For development the app runs the pipeline from the repo's `.venv`, which `make setup` creates (override with `PY=`).
 Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage Voices`, `-NLPreviewPanel YES`,
@@ -81,13 +85,14 @@ Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage V
 | `neuralloop_books/engines/auto.py` | `AutoEngine`: NotebookLM first, local engine for the whole run or per failed item (an item fails on its own if the fallback can't be set up or stops working mid-run); podcasts and videos wait for NotebookLM (limit, no answer, a session that keeps failing); a fallback on this Mac makes one text item at a time while NotebookLM keeps two lanes (`leave_lane` hands the run's lane back before the fallback is got ready (a model download) and before queueing); `GenerationFailed` media fail as NotebookLM's, never local; results tagged with who made them (`tasks.*.by`) |
 | `neuralloop_books/notebook.py` | `ChapterMaker.make(task, chapter)`: one item via notebooklm-py (podcasts, videos, quizzes and decks asked for once and waited for again; two whole waits, then `NotebookLMBusy`; a lost create reply is found again via `artifacts.list_*` (only an item listed as made from the chapter's source), never asked twice; a mind map is the tree NotebookLM answers with, downloaded only by its own id, never without one; a failed generation status becomes `QuotaError` (limit) or `GenerationFailed`; an item made but whose download failed keeps its `taskId` and waits (`DownloadLater`: never made again, here or locally) for the next run to download it, at most `config.NOTEBOOKLM_DOWNLOAD_TRIES` runs, then `NotDownloaded`, a `GenerationFailed`); `is_quota_error`, `is_auth_error`, `is_transient_error` (feature-unavailable, not-found, validation and unreadable answers are lasting; 502/503/504 only as HTTP statuses); `open_client` |
 | `neuralloop_books/models/` | Text models: `make_model(provider, model)`, `SetupError`, `QuotaError`, `communicate` (kills a timed-out child), `short_error` (an error's first line with keys hidden, shared by the engines); `anthropic`, `openai_compat` (OpenAI, OpenRouter, any compatible `custom` URL), `hermes`, `ollama` (native API, JSON schemas), `opencode`, `fake` |
-| `neuralloop_books/speech/` | Speech: `make_speech(name, voices)`; `rumik` (Rumik OSS-1 via mlx-audio, 8-bit or 4-bit; CC-BY-NC) is the only voice; `fake` for tests |
-| `neuralloop_books/video.py` | Explainer → MP4: deterministic HTML/JS scene (`renderAt(t)`), frames from headless Chromium, PyAV H.264 (h264_videotoolbox first, libx264 only as a last resort) + narration (`NEURALLOOP_VIDEO=0` turns it off) |
+| `neuralloop_books/speech/` | Speech: `make_speech(name, voices)`; `auto` = `rumik` on Apple silicon, else `kokoro`; `rumik` (Rumik OSS-1 via mlx-audio, 8-bit or 4-bit; CC-BY-NC); `kokoro` (Kokoro-82M via kokoro-onnx, Apache-2.0; int8 "fast" or fp32 "best", files pinned by SHA-256, Rumik's voice names mapped to Kokoro's); `fake` for tests |
+| `neuralloop_books/video.py` | Explainer → MP4: deterministic HTML/JS scene (`renderAt(t)`), frames from headless Chromium, PyAV H.264 (h264_videotoolbox, then Windows' h264_mf, libx264 only as a last resort) + narration (`NEURALLOOP_VIDEO=0` turns it off) |
+| `neuralloop_books/portable.py` | What differs on Windows: the book's OS lock (`flock`, or `msvcrt.locking` on one byte far past the pid), process groups and ending a tree (`taskkill /T`), no console windows, memory, `app_data()` (`%APPDATA%\NeuralLoop`, the Mac's Application Support folder, or XDG; `NEURALLOOP_HOME` overrides), Chrome's places, `MACHINE` ("Mac"/"PC") for copy |
 | `neuralloop_books/recall.py` | `grade(model, question, keyPoints, answer)`: one check per key point in parallel, evidence must be in the answer and about the idea; `word_match` fallback (words in any script: accents optional, character pairs for scripts without spaces) |
 | `neuralloop_books/aiconfig.py` | `load(path)` → `AIConfig` (engine, make, per-item `tasks`, recall model, voices, voice quality, podcast length) from the person's `ai.json` |
-| `neuralloop_books/setup.py` | First run: `ensure_ollama` (bundled or installed; started with a filtered environment, no provider keys), `ensure_model` (default by memory: `qwen3:8b`/`qwen3:4b`; runs on a run's first local item too, `any_will_do` when no model is named (any installed chat model will do; embedding models like `nomic-embed-text` never count, and Ollama never picks one), step "Downloading your Mac's AI (first time only)"), `ensure_rumik` |
+| `neuralloop_books/setup.py` | First run: `ensure_ollama` (bundled or installed; started with a filtered environment, no provider keys; on Windows, where nothing is bundled, a missing Ollama says to get it from ollama.com), `ensure_model` (default by memory: `qwen3:8b`/`qwen3:4b`; runs on a run's first local item too, `any_will_do` when no model is named (any installed chat model will do; embedding models like `nomic-embed-text` never count, and Ollama never picks one), step "Downloading your Mac's AI (first time only)", "PC" on Windows), `ensure_voices` (`ensure_rumik` on Apple silicon, else `ensure_kokoro` with `  setup: downloading voices N%` lines) |
 | `neuralloop_books/account.py` | Google sign-in via `notebooklm login` (Chrome when installed, else Chromium downloaded once into the person's `browsers/` folder, never inside the signed app; the login runs in its own process group, so stopping a sign-in (SIGTERM, "Not now") closes its browser too and exits 130), `status()`, `sign_out()`, `usage()` (NotebookLM's five-hour and weekly allowance) |
-| `neuralloop_books/audio.py` | `split_for_speech`, `join_wavs` (with pauses, returns durations), `to_m4a` (afconvert) |
+| `neuralloop_books/audio.py` | `split_for_speech`, `join_wavs` (with pauses, returns durations), `to_m4a` (afconvert, else AAC through PyAV, else the WAV is kept) |
 | `neuralloop_books/context.py` | `chunks`, `source_for`: long chapters are condensed into notes that fit the model's budget |
 | `neuralloop_books/schemas.py` | JSON schemas per item; Ollama uses them to constrain small models |
 | `neuralloop_books/convert.py` | Model and NotebookLM outputs → our formats: `loose_json` (parses the raw answer first), `strip_citations` (only citations after prose, never in code or number lists), `plain_words`/`slug` (Unicode-aware), `quiz`, `flashcards`, `study`, `concept_graph`, `mind_map`, `podcast_script`, `explainer` |
@@ -113,6 +118,16 @@ Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage V
 | `App/iPad/` | The iPad's entry point (`NeuralLoopPadApp`: library, book screens), its profile button and Settings sheet (account and sync; `DriveSyncCard`: Drive sign-in, what's synced, when). Books added on the iPad go to `inbox/` for the Mac (`Library.addToInbox`) |
 | `project.yml` | XcodeGen spec: `NeuralLoop` (macOS; Debug knows the repo path, Release runs only its bundled runtime) and `NeuralLoopPad` (iPadOS 17, same App sources minus the pipeline runner, AI settings, notifications, move-in, and the Mac's App struct); `PipLayers` is a folder resource in both |
 
+### `windows` — the Windows app (Python package `neuralloop_desktop`; spec 07's laptops)
+| File | Responsibility |
+|---|---|
+| `core/` | Pure, tested ports of `NeuralLoopCore` (same rules, same file formats): `jsonish` (Swift's JSON number handling, half-away-from-zero rounding, sorted keys), `book` (book.json/book-data.js, `file_in` path containment: no `/`, `\`, `:` or NUL escapes), `progress` (lenient decoding, merging other devices, `save` with only this device's log), `coverage` (play spans, reading credit), `loop` (stages, FSRS, due cards, quiz state, auto steps), `study` (remake scoring, plain math, recall word match, year log, shelf summary), `prep` (`PrepWindow`, `PrepActivity`/`PrepProgress`, run problems, usage), `pipeline_run` (line parser, arguments, titles, `environment` like `PipelineEnvironment` plus `PYTHONIOENCODING=utf-8`), `aiconfig`, `nudges` (`Nudges`, Silly steps, `NudgeDelivery`, `NudgeMoment`), `caf` (Silly mode's IMA4 CAF sounds → WAV; FFmpeg can't read them) |
+| `app/` | I/O: `paths` (`%APPDATA%\NeuralLoop`, the installed bundle), `store`, `keys` (keyring → Windows Credential Manager, service "NeuralLoop"), `runner` (`nl-book.exe --pipeline` installed, `pipeline/nl_book.py` from the repo; output to pipeline.log, `LogFollower`), `library` (the shelf, background loop, auto-resume, chapter ready, nudges, Recycle Bin removal), `session` (one open book), `server` (`127.0.0.1` with a random token path and Host check: the window, Pip's assets, book media with byte ranges and containment, PDF pages via pypdfium2, sounds, `/show` for one instance), `api` (pywebview's `js_api`), `moment` (`SHQueryUserNotificationState`, microphone in use), `notify` (toasts via windows-toasts, else the tray balloon), `tray` (pystray menu) |
+| `ui/` | The window (HTML/CSS/JS, no build step): `app.js` (shelf, welcome, Settings, Pip's panel), `book.js` (the five steps, players with play tracking, reading credit, quiz, remake, mind map, cards, book map), `graph.js` (layout and explorer), `pip.html` (the big Pip), `browser-shim.js` (`?browser=1`: the same API over HTTP for `--browser`) |
+| `main.py` | `NeuralLoop.exe` (the app; `--background` from the Start-up folder: only the tray), `nl-book.exe` (the pipeline; `-m notebooklm|playwright` too), `--browser` (development) |
+| `build.py`, `NeuralLoop.spec`, `installer.iss`, `launcher.py`, `requirements.txt` | The build (icons from the iPad's 1024 px icon, PyInstaller, a dry run with the built `nl-book.exe`, Inno Setup per-user installer, zip); CI: `.github/workflows/windows.yml` |
+| `tests/` | pytest: the Swift tests' cases for every core rule, plus the library, server, nudging, and entry points end to end with a practice run |
+
 ### Other
 `scripts/build-runtime.sh` (self-contained runtime: Python 3.12.14, hash-locked wheels from `scripts/runtime-requirements.txt`
 (refresh command at the top of the script), Ollama checked by SHA-256 and Team ID, Chromium; pip's launcher scripts and sounddevice's Windows DLLs removed, and a check that no file holds the build folder's or
@@ -127,7 +142,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
 
 - **Pipeline CLI** (used by `apple/App/Services`): `nl_book.py BOOK --out DIR [--no-open] --media SPEC --style S --audio A
   --video V --language L [--engine auto|local|notebooklm] [--provider auto|anthropic|openai|openrouter|custom|ollama|opencode|hermes|fake]
-  [--model M] [--base-url URL] [--context CHARS] [--audio-length auto|short|default|long] [--speech auto|rumik|fake] [--voices A,B] [--title T] [--instructions TEXT] [--dry-run] [--retry]` (the app always sends `--chapters` with the just-ahead window, or `all`).
+  [--model M] [--base-url URL] [--context CHARS] [--audio-length auto|short|default|long] [--speech auto|rumik|kokoro|fake] [--voices A,B] [--title T] [--instructions TEXT] [--dry-run] [--retry]` (the app always sends `--chapters` with the just-ahead window, or `all`).
   `--instructions` is the style note for podcasts and videos (NotebookLM and the local engine) and the local engine's study guide
   (default `config.DEFAULT_INSTRUCTIONS`, a friendly deep-dive for software engineers).
   `--title` names the book when it's first split (later runs keep the saved title). The app sends it as one argument, `--title=T`, on every run,
@@ -143,7 +158,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
   `recall`; exit 3 if any fail; with `--provider`/`--model`/`--base-url` it checks that model as `make`), `--grade-recall` (stdin `{question, keyPoints, answer}`, stdout `{covered:[bool], score,
   feedback, missing, by}`). `--ai-config PATH` (or `NEURALLOOP_AI_CONFIG`): the person's `ai.json` = `{engine, make:{provider,
   model, baseUrl}, tasks:{<item>:{provider, model, baseUrl}}, recall:{provider, model, baseUrl}, voices:[A, B],
-  voiceQuality:"fast"|"best", audioLength:"auto"|"short"|"default"|"long", hermesTools:false}` (Rumik 4-bit, about twice as fast, or 8-bit; podcast
+  voiceQuality:"fast"|"best", audioLength:"auto"|"short"|"default"|"long", hermesTools:false}` (Rumik 4-bit, about twice as fast, or 8-bit; Kokoro int8 or fp32; podcast
   length for NotebookLM and the local engine, `auto` = short for chapters under ~30,000 characters); flags override it. A task or recall
   choice inherits a missing model or `baseUrl` only from a choice for the same provider. A `custom` address gets `http://` and `/v1`
   when they're missing; with no model, a custom server's first listed model (LM Studio's loaded one) is used, and Ollama's default.
@@ -154,7 +169,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
   denied, with `HOME` and `XDG_CONFIG_HOME` in an empty folder so the person's global opencode config can't loosen that
   (its data, cache, and state folders are kept for sign-ins); Hermes is refused unless ai.json `hermesTools: true`; both get an environment without API keys; chapter text is
   wrapped as data (`prompts.wrap_chapter`). Exit 2 = the book couldn't be read ("This book couldn't be read: …"), an invalid chapter/media selection, or the book already being prepared (a corrupt state.json is not exit 2); 3 = setup needed (also `--engine notebooklm` without the library). `--context` below 1000 is raised to 1000. `--parallel` defaults to 1 only for `--engine local` with a model on this Mac.
-- **Book folder** (`~/Library/Application Support/app.neuralloop.books/books/<id>/`): `state.json` (pipeline state; tasks record
+- **Book folder** (`~/Library/Application Support/app.neuralloop.books/books/<id>/`; on Windows `%APPDATA%\NeuralLoop\books\<id>\`): `state.json` (pipeline state; tasks record
   `by`; a chapter's `sourceId` is its NotebookLM source, with `sourceReady: false` while NotebookLM is still reading it (`readTries`: runs it stayed unread; `readAgain`: it was added once more); NotebookLM tasks may hold `taskId` and `requestedAt` (epoch seconds) until done or failed, and the next run waits for that id first (plus `downloadTries` when it was made but its download failed); `timings: {"<maker>:<item>": [seconds…]}` (last 10, for the loader's estimates); `engine` stays `auto` when the fallback starts mid-run), `meta.json` (`path`, `originalPath`, `addedAt`, `title`
   (the inbox sidecar's, else the original file's name, else "Your book"; never an inbox UUID; `PipelineCommand.bookTitle`), `options:{media, dryRun}`; "Prepare more" sets `media: "all"`, which means prepare everything; otherwise each run asks for the just-ahead window, `PrepWindow`), `progress.json` (study progress), `book.json` (the app's data),
   `knowledge-graph.json`, `activity.json` (what the run is making right now, for the app's progress loader: `{updated, ended, pid,
@@ -162,7 +177,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
   across an item's stages (local podcasts: script 5 %, lines 10–95 %, mix; local videos: explainer 5 %, slides 10–40 %, frames 40–98 %);
   NotebookLM gives no progress, so the app estimates it from `expected` and says "About N%"; written atomically, at most every
   half second unless the step changes, `ended: true` when the run ends; Mac only, never synced; `neuralloop_books/activity.py`),
-  `.running` (an OS lock (`flock`) held by the run for its whole length and released even if it's killed;
+  `.running` (an OS lock (`flock`; on Windows `msvcrt.locking` on byte 2^30) held by the run for its whole length and released even if it's killed;
   it holds the pid; a leftover file never blocks; interrupted `working` items go back to `todo` on the next run),
   `source.{pdf,epub}` (the app's own copy of the book), `chapters/NN.{pdf,md}` (EPUB Markdown keeps figures as
   `![alt](img/NN-KK.ext)` with files in `chapters/img/`, captions as `*…*`, emphasis, lists), `media/`, `raw/`, `pipeline.log`.
@@ -209,7 +224,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
 2. `docs/specs/06-speed.md` — reading-order queue, media lane, streamed podcast lines and submit-then-poll for NotebookLM done;
    next: a warm worker process.
 3. `docs/specs/04-native-macos-app.md` + `docs/specs/07-every-device.md` — the SwiftUI Mac app is the product (the Tauri app
-   and the per-book study site are gone; their screens live in the app). Next: Windows and Linux laptops. Done: Pip's rig,
+   and the per-book study site are gone; their screens live in the app). Windows is done (`windows/`; no Drive sync yet); next: Drive sync on Windows, then Linux laptops. Done: Pip's rig,
    the first-launch sign-in and guided tour, the Google Drive library and the iPad app (spec 07; needs the owner's OAuth client
    ID in `apple/Config/Google.xcconfig`, see `docs/DEVELOPMENT.md`).
 4. `docs/specs/02-book-import-and-parsing.md` — parse preview, correct parsing, tests on real-world shapes.

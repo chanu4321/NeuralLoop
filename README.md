@@ -8,6 +8,7 @@
 <p align="center">
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-E0683F?style=for-the-badge&logo=apple&logoColor=white">
   <img alt="iPadOS 17+" src="https://img.shields.io/badge/iPadOS-17%2B-5C86E0?style=for-the-badge&logo=apple&logoColor=white">
+  <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-3F8FD6?style=for-the-badge&logo=windows&logoColor=white">
   <img alt="Made with SwiftUI" src="https://img.shields.io/badge/SwiftUI-native-3FA88A?style=for-the-badge&logo=swift&logoColor=white">
   <img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20NC-9A6FD6?style=for-the-badge">
 </p>
@@ -94,6 +95,32 @@ fills in a little square for every day you study.
    Settings → Your AI.
 
 <details>
+<summary><b>Windows</b> (Windows 10 or 11, 64-bit)</summary>
+
+<br>
+
+1. Download `NeuralLoop-<version>-setup.exe` from the [latest release](../../releases/latest), or build it yourself
+   (below). It installs just for you, no administrator needed.
+2. Windows may say it protected your PC (the app isn't signed yet): **More info → Run anyway**.
+3. Open NeuralLoop from the Start menu. Pip lives in the notification area by the clock (click the up arrow if
+   it's hidden); closing the window keeps Pip there, and **Quit NeuralLoop** in Pip's menu ends it.
+4. Sign in with Google when Pip asks, or pick **Not now** and use any AI in Settings → Your AI (your PC's own AI
+   needs [Ollama](https://ollama.com) installed). Podcasts and explainers made on your PC are voiced by Kokoro,
+   downloaded the first time (about 120 MB, or 350 MB for the best voices).
+
+Build it on Windows with Python 3.12:
+
+```powershell
+python -m pip install -r windows/requirements.txt
+python windows/build.py      # dist\NeuralLoop-<version>-setup.exe (with Inno Setup) and a .zip
+```
+
+What's different from the Mac: no Google Drive sync or iPad library yet, Kokoro voices instead of Rumik, and keys
+are kept in Windows Credential Manager. Your books live in `%APPDATA%\NeuralLoop`.
+
+</details>
+
+<details>
 <summary><b>iPad</b> (iPadOS 17 or later)</summary>
 
 <br>
@@ -112,6 +139,7 @@ For now, the iPad app is built from this repo with Xcode (free Apple ID is fine)
 make setup    # once: a .venv with hash-locked tools
 make check    # every test and linter
 make mac      # build and open the Mac app
+make windows-dev   # the Windows app's window in your browser, on any OS
 ```
 
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is a guided tour of the code, and [CLAUDE.md](CLAUDE.md) has the rules and

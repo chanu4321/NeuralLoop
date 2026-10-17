@@ -66,10 +66,11 @@ NeuralLoop/
 ├── Makefile                  make setup / check / mac / package / runtime / pip
 ├── pipeline/                 the Python book pipeline
 ├── apple/                    the Swift core, the Mac app, the iPad app
+├── windows/                  the Windows app: the same rules in Python, a web window, Pip in the tray
 ├── scripts/                  building the runtime, packaging the DMG, dev tools
 ├── design/                   Pip's artwork, the app icons, the DMG window (all generated from code)
 ├── docs/                     specs, development guide, this document
-└── .github/workflows/        CI: lint, tests, Xcode builds, stale-artwork check
+└── .github/workflows/        CI: lint, tests, Xcode builds, stale-artwork check, the Windows build
 ```
 
 ### `pipeline/` — the book pipeline
@@ -174,6 +175,23 @@ sign-in and sync, iPad only), icon, and Info.plist. The iPad app shares every vi
 **`App/Resources`** — `pip-rig.json` and `PipLayers/` (Pip's animation data and layer pictures, generated),
 `AppIcon.icns`, fonts.
 
+### `windows/` — the Windows app
+
+The Windows app reads and writes exactly what the Mac app does (book folders, `book.json`, `progress.json`, `ai.json`)
+and runs the same pipeline, so it is the Mac app's behaviour in Python rather than a new design:
+
+- **`neuralloop_desktop/core`** — `NeuralLoopCore` ported rule for rule (FSRS, the loop, progress merging, the
+  just-ahead window, nudges, the pipeline's command line), with the Swift tests' cases in `windows/tests`.
+- **`neuralloop_desktop/app`** — the services: the library and its background loop, pipeline runs, keys in Windows
+  Credential Manager, notifications, Pip in the notification area, and a small web server on `127.0.0.1` (a random
+  token in every path) that hands the window its pages and a book's media.
+- **`neuralloop_desktop/ui`** — the window, in plain HTML, CSS, and JavaScript, shown by Microsoft Edge WebView2
+  through pywebview: the shelf, the five steps, the book map, Settings, Pip's panel, and the big Pip.
+- **`build.py`** — PyInstaller makes `NeuralLoop.exe` (the app) and `nl-book.exe` (the pipeline, a console program
+  so its output can be read) in one folder; Inno Setup wraps it in a per-user installer.
+
+What it leaves out for now: Drive sync and the iPad library. Its voices are Kokoro, since Rumik needs Apple silicon.
+
 ### `scripts/`
 
 | Script | What it's for |
@@ -214,6 +232,9 @@ books/<id>/
 
 In your Google Drive (hidden app folder, only NeuralLoop can see it): `books/<id>/…` (everything above except private
 files: logs, locks, state, your source copy, other devices' downloads), `books/<id>/progress/<device>.json`, `inbox/`.
+
+On Windows: the same layout in `%APPDATA%\NeuralLoop\` (no `sync-state.json` or `inbox/` yet), plus `voices/kokoro/`
+(the Kokoro voice files) and `webview/` (the window's own browser storage). API keys: Windows Credential Manager.
 
 API keys: the macOS Keychain. Google Drive tokens: the Keychain (this device only). NotebookLM's session: managed by
 notebooklm-py in `~/.notebooklm`.
@@ -263,11 +284,12 @@ make check     # every linter and test (Python and Swift)
 make mac       # build and open the Mac app
 make package   # dist/NeuralLoop-<version>.dmg
 make pip       # regenerate Pip after changing generate_pip.py
+make windows   # on Windows: the installer and a zip (python windows/build.py)
 ```
 
 The iPad app: `cd apple && xcodegen generate && open NeuralLoop.xcodeproj`, scheme **NeuralLoopPad** (see
 `docs/DEVELOPMENT.md` for installing on your own iPad and the Google setup).
 
-Rules of thumb (from `CLAUDE.md`): tests first; pure logic in `NeuralLoopCore` / `neuralloop_books`, screens thin;
+Rules of thumb (from `CLAUDE.md`): tests first; pure logic in `NeuralLoopCore` / `neuralloop_books` / `neuralloop_desktop.core`, screens thin;
 generated files are never hand-edited; copy is warm and plain, and Pip is never angry or disappointed (sad
 only as Silly mode's joke).

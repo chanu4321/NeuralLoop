@@ -1,4 +1,4 @@
-# NeuralLoop (Mac)
+# NeuralLoop (Mac and Windows)
 
 Pip lives in your menu bar. Drop a PDF or EPUB on NeuralLoop and every chapter becomes a learning loop: listen (video +
 podcast), read with a guide, recall in your own words and take a quiz, remake the mind map from memory and explore the
@@ -42,6 +42,37 @@ make package   # dist/NeuralLoop-<version>.dmg
 
 The rules: pure logic lives in `NeuralLoopCore` and `neuralloop_books`, with tests; screens stay thin. Write the failing test
 first, then the change. `CLAUDE.md` has the contracts between the app and the pipeline.
+
+## Windows
+
+The Windows app is Python all the way down: `windows/neuralloop_desktop` with a web window (pywebview on Microsoft
+Edge WebView2) instead of SwiftUI. It reads and writes the same book folders, `book.json`, `progress.json`, and
+`ai.json` as the Mac, and runs the same pipeline.
+
+| Path | What it is |
+|---|---|
+| `windows/neuralloop_desktop/core` | The Mac app's pure rules (`NeuralLoopCore`), ported to Python with the Swift tests: FSRS, the loop, progress merging, the just-ahead window, nudges, the pipeline's command line, IMA4 CAF decoding for Silly mode's sounds |
+| `windows/neuralloop_desktop/app` | I/O: the library and its background loop, pipeline runs, a local web server for the window (random token, `127.0.0.1` only), keys in Windows Credential Manager, the tray, toasts, and whether the moment suits the big Pip (`SHQueryUserNotificationState`, microphone in use) |
+| `windows/neuralloop_desktop/ui` | The window: shelf, the five steps, the book map, Settings, Pip's panel, and the big Pip (`pip.html`) |
+| `windows/build.py`, `NeuralLoop.spec`, `installer.iss` | The build: `NeuralLoop.exe` (the app) and `nl-book.exe` (the pipeline, a console program the app reads) in one PyInstaller folder, and a per-user Inno Setup installer |
+
+Working on it:
+
+```bash
+pip install -r windows/requirements.txt   # on Windows; elsewhere `make setup` plus the packages you need
+cd windows && python -m pytest -q          # also part of `make test`, on any OS
+make windows-dev                           # the window in your browser (no tray or native dialogs), on any OS
+python -m neuralloop_desktop               # the real app, on Windows (from windows/)
+python windows/build.py                    # dist/NeuralLoop-<version>-setup.exe and a zip (`make windows`)
+```
+
+`NEURALLOOP_HOME` puts the library somewhere other than `%APPDATA%\NeuralLoop`, so a test library never touches yours.
+The Windows CI job (`.github/workflows/windows.yml`) runs both test suites on Windows, builds, makes the sample book with
+the built `nl-book.exe`, and uploads the installer.
+
+Not on Windows yet: Google Drive sync and the iPad library (spec 07), and the Mac's "move into Applications" sheet
+(the installer covers it). Voices are Kokoro (Apache-2.0) instead of Rumik, which needs Apple silicon. The installer
+isn't signed, so SmartScreen asks once (**More info → Run anyway**).
 
 ## Signing
 
