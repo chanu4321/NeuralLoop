@@ -3,7 +3,7 @@
 It serves the window's files, Pip's poses and fonts (the pipeline's own), a book's media (with byte ranges, so
 podcasts and videos can seek), PDF chapter pages as pictures, and Silly mode's sounds (converted from the
 Mac's
-.caf once). A book's files are served only from inside that book's folder; anything else is a 404.
+.caf once, `core.caf`). A book's files are served only from inside that book's folder; anything else is a 404.
 """
 
 import contextlib
@@ -11,13 +11,14 @@ import json
 import mimetypes
 import re
 import secrets
+import struct
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from ..core import book as books
-from ..core import pipeline_run
+from ..core import caf, pipeline_run
 from . import paths
 
 MOODS = {
@@ -143,22 +144,12 @@ class Server:
         if not source.exists():
             return None
         try:
-            import av
-
+            sound = caf.to_wav(source.read_bytes())
             cache.parent.mkdir(parents=True, exist_ok=True)
             partial = cache.with_suffix(".part")
-            with av.open(str(source)) as src, av.open(str(partial), "w", format="wav") as out:
-                heard = src.streams.audio[0]
-                stream = out.add_stream(
-                    "pcm_s16le", rate=heard.rate, layout="stereo" if heard.channels > 1 else "mono"
-                )
-                resampler = av.AudioResampler(format="s16", layout=stream.layout, rate=heard.rate)
-                for frame in src.decode(heard):
-                    for ready in resampler.resample(frame):
-                        out.mux(stream.encode(ready))
-                out.mux(stream.encode(None))
+            partial.write_bytes(sound)
             partial.replace(cache)
-        except Exception:
+        except (OSError, caf.NotIMA4, struct.error):
             return None
         return cache
 

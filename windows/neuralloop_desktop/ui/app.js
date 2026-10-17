@@ -70,7 +70,10 @@ async function boot() {
   NL.api = window.pywebview.api;
   if (window.PIP_CSS) document.head.append(el("style", {}, window.PIP_CSS));
   fillPips();
-  if (NL.panel) document.body.classList.add("panel");
+  if (NL.panel) {
+    document.body.classList.add("panel");
+    window.addEventListener("blur", () => NL.api.hide_panel());  // like any flyout from the notification area
+  }
   await refreshShelf();
   if (NL.panel) return renderPanel();
   wireWindow();
