@@ -48,6 +48,17 @@ def test_no_ollama_anywhere_is_a_setup_error(monkeypatch):
         asyncio.run(setup.ensure_ollama("http://localhost:11434", log=lambda _: None, wait=0.01))
 
 
+def test_on_windows_no_ollama_says_where_to_get_it(monkeypatch):
+    """The Windows app doesn't carry Ollama, so reinstalling NeuralLoop wouldn't help."""
+    monkeypatch.setattr(setup, "_ollama_up", lambda host: False)
+    monkeypatch.delenv("NEURALLOOP_OLLAMA", raising=False)
+    monkeypatch.setattr(setup.shutil, "which", lambda name: None)
+    monkeypatch.setattr(setup.portable, "WINDOWS", True)
+    with pytest.raises(SetupError, match=r"ollama\.com") as raised:
+        asyncio.run(setup.ensure_ollama("http://localhost:11434", log=lambda _: None, wait=0.01))
+    assert "Reinstall" not in str(raised.value)
+
+
 def test_model_download_reports_progress(monkeypatch):
     events = [
         {"status": "pulling manifest"},

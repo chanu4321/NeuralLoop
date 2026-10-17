@@ -52,6 +52,11 @@ async def ensure_ollama(host: str, log: Callable[[str], None], wait: float = 0.5
         return
     binary = os.environ.get("NEURALLOOP_OLLAMA") or shutil.which("ollama")
     if not binary or not os.path.exists(binary):
+        if portable.WINDOWS:  # the Windows app doesn't carry Ollama
+            raise SetupError(
+                "Your PC's own AI needs Ollama, which isn't installed. Get it from ollama.com, then try "
+                "again (or pick another AI in Settings → Your AI)."
+            )
         raise SetupError("Ollama isn't running and isn't installed. Reinstall NeuralLoop, or install Ollama.")
     log("  setup: Starting Pip's local brain (Ollama)…")
     # Ollama keeps running after we exit: it gets the basics and its own settings, never our providers' keys.
