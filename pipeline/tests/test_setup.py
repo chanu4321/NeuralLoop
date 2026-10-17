@@ -138,7 +138,7 @@ def test_a_download_inside_a_book_run_shows_as_the_waiting_items_step(monkeypatc
         feed.end(1, "study", token=token)
 
     asyncio.run(item())
-    assert seen[0]["step"] == "Downloading your Mac's AI (first time only)"
+    assert seen[0]["step"] == f"Downloading your {setup.portable.MACHINE}'s AI (first time only)"
 
 
 def test_with_no_model_named_an_embedding_model_alone_doesnt_count(monkeypatch):

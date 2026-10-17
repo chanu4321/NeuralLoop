@@ -179,8 +179,8 @@ def test_file_references_still_point_at_the_persons_files(tmp_path):
     _write(folder / "opencode.json", json.dumps({"provider": provider}))
     config, _ = _config({"HOME": str(home)})
     options = config["provider"]["a"]["options"]
-    assert options["apiKey"] == f"{{file:{home}/keys/a.txt}}"
-    assert options["b"] == f"{{file:{folder}/b.txt}}"
+    assert options["apiKey"] == f"{{file:{home / 'keys' / 'a.txt'}}}"
+    assert options["b"] == f"{{file:{folder / 'b.txt'}}}"
     assert options["c"] == "{file:/abs/c"  # not a reference: left as it is
 
 

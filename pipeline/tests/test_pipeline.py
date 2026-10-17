@@ -243,12 +243,13 @@ def test_an_unreadable_state_file_is_kept_aside_and_the_book_split_again(options
 
 
 def test_two_runs_never_prepare_the_same_book_at_once(options):
-    import fcntl
     import os
+
+    from neuralloop_books import portable
 
     options.out.mkdir(parents=True)
     with open(options.out / ".running", "w") as held:  # another run holds the book's lock
-        fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        portable.try_lock(held)
         held.write(str(os.getpid()))
         held.flush()
         with pytest.raises(ValueError, match="already being prepared"):
