@@ -131,23 +131,8 @@ def run_app(background: bool = False) -> int:
         background_color=background,
         easy_drag=False,
     )
-    big = webview.create_window(
-        "Pip says hi",
-        f"{base}/ui/pip.html",
-        js_api=api,
-        width=440,
-        height=480,
-        hidden=True,
-        frameless=True,
-        on_top=True,
-        transparent=True,
-        focus=False,
-        resizable=False,
-        easy_drag=False,
-    )
     api._attach("main", main_window)
     api._attach("panel", panel)
-    api._attach("pip", big)
 
     def show_main(book_id: str | None = None, page: str | None = None) -> None:
         panel.hide()
@@ -165,14 +150,33 @@ def run_app(background: bool = False) -> int:
         api._emit("panel", True)
 
     def big_pip(nudge: dict) -> bool:
-        screen = webview.screens[0]
-        big.move((screen.width - 440) // 2, (screen.height - 480) // 2)
-        big.show()
+        """The big Pip's window is made for one nudge and closed when it ends (`Api.hide_big_pip`): a hidden
+        window made at launch showed up empty on some PCs. Windows can't make a WebView2 window see-through,
+        so there it has the app's background."""
         settings = library.nudge_settings()
         payload = json.dumps(
             {**nudge, "volume": settings["volume"], "sound": f"{base}/sound/{nudge['mood']}.wav"}
         )
-        big.evaluate_js(f"window.BigPip && window.BigPip.show({payload})")
+        api.hide_big_pip()
+        screen = webview.screens[0]
+        big = webview.create_window(
+            "Pip says hi",
+            f"{base}/ui/pip.html",
+            js_api=api,
+            width=440,
+            height=480,
+            x=(screen.width - 440) // 2,
+            y=(screen.height - 480) // 2,
+            frameless=True,
+            on_top=True,
+            transparent=not portable.WINDOWS,
+            background_color=background,
+            focus=False,
+            resizable=False,
+            easy_drag=False,
+        )
+        big.events.loaded += lambda: big.evaluate_js(f"window.BigPip && window.BigPip.show({payload})")
+        api._attach("pip", big)
         return True
 
     notifier = Notifier(
@@ -197,7 +201,8 @@ def run_app(background: bool = False) -> int:
         api._flush_all()
         library.stop()
         tray.stop()
-        for window in (big, panel, main_window):
+        api.hide_big_pip()
+        for window in (panel, main_window):
             with contextlib.suppress(Exception):
                 window.destroy()
 

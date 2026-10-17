@@ -502,9 +502,11 @@ class Api:
                 self._emit("open", book_id)
 
     def hide_big_pip(self) -> None:
-        window = self._windows.get("pip")
+        """The big Pip is done: its window closes (it's made again for the next nudge)."""
+        window = self._windows.pop("pip", None)
         if window:
-            window.hide()
+            with contextlib.suppress(Exception):  # already closed
+                window.destroy()
 
     def hide_panel(self) -> None:
         panel = self._windows.get("panel")

@@ -151,3 +151,22 @@ def test_the_tray_menu_offers_what_pip_can_do(monkeypatch, tmp_path):
     assert built["notified"] == ("Chapter 1 is ready", "…")
     t.stop()
     assert built["running"] is False
+
+
+def test_the_big_pips_window_closes_when_pip_is_done(monkeypatch, tmp_path):
+    """It's made for each nudge (a hidden one made at launch showed up empty), so done means closed."""
+    from neuralloop_desktop.app.api import Api
+
+    monkeypatch.setenv("NEURALLOOP_HOME", str(tmp_path))
+    api = Api(Library(), "http://127.0.0.1:1/token")
+
+    class Window:
+        closed = 0
+
+        def destroy(self):
+            Window.closed += 1
+
+    api._attach("pip", Window())
+    api.hide_big_pip()
+    api.hide_big_pip()  # nothing left to close
+    assert Window.closed == 1 and "pip" not in api._windows
