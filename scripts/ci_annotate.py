@@ -12,9 +12,11 @@ def escape(text: str) -> str:
     return text.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
 
 
+def escape_title(text: str) -> str:
+    return escape(text).replace(":", "%3A").replace(",", "%2C")
+
+
 def failures(path: Path) -> list[tuple[str, str]]:
-    if not path.exists():
-        return []
     found = []
     for case in ET.parse(path).iter("testcase"):
         for problem in [*case.iter("failure"), *case.iter("error")]:
@@ -24,10 +26,19 @@ def failures(path: Path) -> list[tuple[str, str]]:
     return found
 
 
+def missing(path: Path) -> list[tuple[str, str]]:
+    """No results at all: pytest died. Its output (results.txt, written by `tee`) says why."""
+    output = path.with_suffix(".txt")
+    tail = ""
+    if output.exists():
+        tail = "\n".join(output.read_text(encoding="utf-8", errors="replace").splitlines()[-30:])
+    return [(f"{path.name} wasn't written", tail or "pytest stopped before writing its results")]
+
+
 def main(paths: list[str]) -> int:
-    found = [f for p in paths for f in failures(Path(p))]
+    found = [f for p in paths for f in (failures(Path(p)) if Path(p).exists() else missing(Path(p)))]
     for name, detail in found[:LIMIT]:
-        print(f"::error title={escape(name)}::{escape(detail)}")
+        print(f"::error title={escape_title(name)}::{escape(detail)}")
     if len(found) > LIMIT:
         print(f"::error::{len(found) - LIMIT} more failures; see the log.")
     return 0

@@ -31,7 +31,8 @@ hiddenimports = [
     "keyring.backends.Windows",
 ]
 
-# Packages with data files, native libraries, or plugins found at run time.
+# Packages with data files, native libraries, or plugins found at run time. (Not onnxruntime: PyInstaller's own
+# hook takes its DLLs, and importing all of it crashes on its quantization and training tools.)
 for package in (
     "neuralloop_books",
     "webview",
@@ -41,7 +42,6 @@ for package in (
     "language_tags",
     "segments",
     "csvw",
-    "onnxruntime",
     "notebooklm",
     "playwright",
     "pypdfium2",
@@ -75,7 +75,10 @@ a = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    excludes=["tkinter", "mlx", "mlx_audio", "pytest", "IPython", "matplotlib"],
+    excludes=[
+        "tkinter", "mlx", "mlx_audio", "pytest", "IPython", "matplotlib",
+        "onnxruntime.quantization", "onnxruntime.tools", "onnxruntime.transformers", "onnxruntime.training",
+    ],  # fmt: skip
     noarchive=False,
 )
 pyz = PYZ(a.pure)

@@ -21,10 +21,18 @@ jobs:
       - name: Install the app's packages and PyInstaller (windows/requirements.txt)
         run: python -m pip install --disable-pip-version-check -r windows/requirements.txt
       - name: Pipeline tests, on Windows
-        run: cd pipeline; python -m pytest -q -p no:cacheprovider --junitxml=../pipeline-results.xml
+        shell: bash
+        run: |
+          cd pipeline
+          python -X faulthandler -m pytest -q -p no:cacheprovider --junitxml=../pipeline-results.xml 2>&1 | tee ../pipeline-results.txt
+          exit "${PIPESTATUS[0]}"
       - name: The Windows app's tests
         if: success() || failure()
-        run: cd windows; python -m pytest -q -p no:cacheprovider --junitxml=../windows-results.xml
+        shell: bash
+        run: |
+          cd windows
+          python -X faulthandler -m pytest -q -p no:cacheprovider --junitxml=../windows-results.xml 2>&1 | tee ../windows-results.txt
+          exit "${PIPESTATUS[0]}"
       - name: Failing tests as annotations
         if: failure()
         run: python scripts/ci_annotate.py pipeline-results.xml windows-results.xml
