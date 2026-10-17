@@ -1,8 +1,10 @@
 """NeuralLoop for Windows: the app, and (installed) its own pipeline.
 
 NeuralLoop.exe                      the app: library window, Pip in the notification area
-NeuralLoop.exe --pipeline ARGS      the book pipeline (what the app runs for every book)
-NeuralLoop.exe -m notebooklm ...    the tools the pipeline runs as modules of this same Python
+nl-book.exe ARGS                    the book pipeline (what the app runs for every book; a console program, so
+                                    its output reaches the app and a terminal)
+nl-book.exe -m notebooklm ...       the tools the pipeline runs as modules of this same Python
+NeuralLoop.exe --background         started with Windows: just Pip in the notification area, no window
 """
 
 import contextlib
@@ -11,12 +13,16 @@ import runpy
 import sys
 import threading
 import urllib.request
+from pathlib import Path
 
 RUNNABLE_MODULES = {"notebooklm", "playwright"}
+PIPELINE_PROGRAM = "nl-book"
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    if is_pipeline_program() and argv[:1] not in (["-m"], ["--pipeline"]):
+        argv = ["--pipeline", *argv]
     if argv[:1] == ["--pipeline"]:
         from neuralloop_books.cli import main as pipeline
 
@@ -28,7 +34,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if argv[:1] == ["--browser"]:
         return run_browser()
-    return run_app()
+    return run_app(background=argv[:1] == ["--background"])
+
+
+def is_pipeline_program() -> bool:
+    """Installed, `nl-book.exe` is the pipeline: the same files as the app, built as a console program."""
+    return bool(getattr(sys, "frozen", False)) and Path(sys.executable).stem.lower() == PIPELINE_PROGRAM
 
 
 def run_browser() -> int:
@@ -58,7 +69,7 @@ def run_browser() -> int:
         return 0
 
 
-def run_app() -> int:
+def run_app(background: bool = False) -> int:
     import webview
     from neuralloop_books import portable
 
@@ -83,6 +94,7 @@ def run_app() -> int:
     api = Api(library, server.base)
     holder["api"] = api
     base = server.base
+    quiet = background
     background = "#1D1716" if dark_mode() else "#FFF7F2"
     main_window = webview.create_window(
         "NeuralLoop",
@@ -93,6 +105,7 @@ def run_app() -> int:
         min_size=(900, 640),
         background_color=background,
         text_select=True,
+        hidden=quiet,
     )
     panel = webview.create_window(
         "Pip",
@@ -209,6 +222,8 @@ def run_app() -> int:
         if tray.start():
             tray_running.set()
             notifier.tray_notify = tray.notify
+        elif quiet:
+            main_window.show()  # no notification area to wait in: the window is the only way in
         library.start()
 
     webview.start(

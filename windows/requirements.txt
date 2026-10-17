@@ -1,0 +1,18 @@
+# Everything the Windows app needs, for development and for `python windows/build.py`.
+# pip install -r windows/requirements.txt   (from the repo's root)
+-e ./pipeline[windows]
+-e ./windows[build]
+pywebview==6.2.1
+pystray==0.19.5
+Pillow==13.0.0
+keyring==25.7.0
+Send2Trash==2.1.0
+pypdfium2==5.14.0
+windows-toasts==1.3.1; sys_platform == "win32"
+kokoro-onnx==0.6.1
+av==19.0.0
+playwright==1.63.0
+notebooklm-py==0.8.5
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
+pytest>=8

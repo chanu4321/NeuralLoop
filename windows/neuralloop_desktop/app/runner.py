@@ -1,13 +1,9 @@
 """Runs the book pipeline (PipelineRunner.swift).
 
-Installed, the app runs itself as the pipeline (`NeuralLoop.exe --pipeline …`, the same Python and packages
-inside
-it). From the repo it runs `pipeline/nl_book.py` with the Python that runs the app. Output goes straight to
-the
-book's pipeline.log, so a run keeps going if the window closes or the app quits; while the app is open, a
-follower
-reads new lines as they come.
-"""
+Installed, the app runs `nl-book.exe` next to it as the pipeline (the same Python and packages, built as a
+console program so its output can be read). From the repo it runs `pipeline/nl_book.py` with the Python that
+runs the app. Output goes straight to the book's pipeline.log, so a run keeps going if the window closes or
+the app quits; while the app is open, a follower reads new lines as they come."""
 
 import contextlib
 import datetime as dt
@@ -28,7 +24,8 @@ from . import keys, paths
 
 def command() -> list[str]:
     if paths.frozen():
-        return [sys.executable, "--pipeline"]
+        helper = Path(sys.executable).with_name("nl-book.exe")
+        return [str(helper) if helper.exists() else sys.executable, "--pipeline"]
     return [sys.executable, str(paths.bundle() / "pipeline" / "nl_book.py")]
 
 

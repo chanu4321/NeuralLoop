@@ -1,0 +1,37 @@
+[project]
+name = "neuralloop-desktop"
+version = "0.2.2"
+description = "NeuralLoop for Windows: the library window, the five-step loop, and Pip in the notification area"
+requires-python = ">=3.10"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+# The window and its services. The pipeline comes from ../pipeline with its `windows` extra
+# (pip install -e "../pipeline[windows]"); requirements.txt has both for a build.
+dependencies = [
+    "neuralloop-books-pipeline",
+    "pywebview>=5.4",        # the window (Edge WebView2 on Windows)
+    "pystray>=0.19",         # Pip in the notification area
+    "Pillow>=10",
+    "keyring>=25",           # saved keys in Windows Credential Manager
+    "Send2Trash>=1.8",       # removed books go to the Recycle Bin
+    "pypdfium2>=4.30",       # PDF chapters shown as pages
+    "windows-toasts>=1.3; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.10"]
+
+[project.gui-scripts]
+neuralloop = "neuralloop_desktop.main:main"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["neuralloop_desktop*"]
+
+[tool.setuptools.package-data]
+neuralloop_desktop = ["ui/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

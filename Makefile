@@ -12,7 +12,7 @@ UNAME := $(shell uname -s)
 CLT := /Library/Developer/CommandLineTools/Library/Developer
 SWIFT_FLAGS := $(if $(findstring CommandLineTools,$(shell xcode-select -p 2>/dev/null)),-Xswiftc -F$(CLT)/Frameworks -Xlinker -F$(CLT)/Frameworks -Xlinker -rpath -Xlinker $(CLT)/Frameworks -Xlinker -rpath -Xlinker $(CLT)/usr/lib,)
 
-.PHONY: setup test check lint check-generated runtime mac package pip
+.PHONY: setup test check lint check-generated runtime mac package pip windows windows-dev
 
 setup:            ## .venv plus every dev tool (scripts/dev-requirements.txt, hash-checked) and Chromium
 	@if [ "$(PY)" = "$(VENV)/bin/python" ] && [ ! -x "$(PY)" ]; then \
@@ -33,14 +33,15 @@ check-generated:  ## generated art matches its sources (hashes and sizes only: n
 	$(PY) design/pip/make_app_icon.py --check
 	$(PY) design/dmg/make_background.py --check
 
-test:             ## all tests: Python, and Swift on macOS
+test:             ## all tests: Python (the pipeline and the Windows app's), and Swift on macOS
 	cd pipeline && $(PY) -m pytest -q
+	cd windows && $(PY) -m pytest -q
 	@if [ "$(UNAME)" = Darwin ] && command -v swift >/dev/null; then cd apple && swift test $(SWIFT_FLAGS); \
 	else echo "Swift tests skipped: they need macOS with Swift (CI runs them in the swift job)"; fi
 
 lint:             ## formatting and linters: Ruff over every Python folder, ShellCheck over scripts/*.sh
-	$(PY) -m ruff check pipeline scripts design
-	$(PY) -m ruff format --check pipeline scripts design
+	$(PY) -m ruff check pipeline scripts design windows
+	$(PY) -m ruff format --check pipeline scripts design windows
 	@if command -v shellcheck >/dev/null; then shellcheck scripts/*.sh; \
 	else echo "ShellCheck skipped: not installed (brew install shellcheck; CI runs it)"; fi
 
@@ -57,3 +58,9 @@ mac:              ## build and open the SwiftUI Mac app (needs Xcode and XcodeGe
 	cd apple && xcodegen generate --quiet && xcodebuild -project NeuralLoop.xcodeproj -scheme NeuralLoop -configuration Debug \
 		-derivedDataPath build/dd CODE_SIGN_IDENTITY="NeuralLoop Development" build -quiet
 	open apple/build/dd/Build/Products/Debug/NeuralLoop.app
+
+windows:          ## NeuralLoop for Windows (run on Windows): dist/NeuralLoop-<version>-setup.exe and a zip
+	$(PY) windows/build.py
+
+windows-dev:      ## the Windows app's window in a browser, on any OS (no tray or native dialogs)
+	cd windows && $(PY) -m neuralloop_desktop --browser

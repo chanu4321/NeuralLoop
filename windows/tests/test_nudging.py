@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from neuralloop_desktop.app import moment, notify
 from neuralloop_desktop.app.library import Library
 from neuralloop_desktop.core import nudges
@@ -98,6 +99,7 @@ def test_a_tick_with_nothing_to_say_sends_nothing(tmp_path, monkeypatch):
 
 def test_the_tray_menu_offers_what_pip_can_do(monkeypatch, tmp_path):
     """pystray is replaced by a stand-in that records the menu (a test machine has no notification area)."""
+    pytest.importorskip("PIL", reason="the tray icon is drawn with Pillow")
     import sys
     import types
 

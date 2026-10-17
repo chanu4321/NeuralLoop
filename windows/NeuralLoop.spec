@@ -1,0 +1,103 @@
+# PyInstaller spec for NeuralLoop for Windows: `python windows/build.py` runs it (after drawing the icons).
+#
+# One folder, two programs sharing every file:
+#   NeuralLoop.exe  the app (no console window)
+#   nl-book.exe     the book pipeline, a console program (the app runs it for every book; its output is read)
+# The app's own files go next to them: the window (neuralloop_desktop/ui), Pip's poses and fonts (inside
+# neuralloop_books/assets), Silly mode's sounds, the sample book, the icon, and the licenses.
+import sys
+from pathlib import Path
+
+from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
+
+ROOT = Path(SPECPATH).parent
+ART = ROOT / "build" / "windows"
+
+datas = [
+    (str(ROOT / "windows" / "neuralloop_desktop" / "ui"), "neuralloop_desktop/ui"),
+    (str(ROOT / "pipeline" / "sample" / "sample-book.epub"), "sample"),
+    (str(ART / "NeuralLoop.ico"), "."),
+    (str(ART / "icon.png"), "."),
+    (str(ROOT / "LICENSE"), "."),
+    (str(ROOT / "NOTICE.md"), "."),
+    (str(ROOT / "licenses"), "licenses"),
+]
+datas += [(str(sound), "sounds") for sound in sorted((ROOT / "apple" / "App" / "Resources").glob("NeuralLoop-*.caf"))]
+binaries = []
+hiddenimports = [
+    *collect_submodules("neuralloop_books"),
+    *collect_submodules("neuralloop_desktop"),
+    "pystray._win32",
+    "keyring.backends.Windows",
+]
+
+# Packages with data files, native libraries, or plugins found at run time.
+for package in (
+    "neuralloop_books",
+    "webview",
+    "kokoro_onnx",
+    "espeakng_loader",
+    "phonemizer",
+    "language_tags",
+    "segments",
+    "csvw",
+    "onnxruntime",
+    "notebooklm",
+    "playwright",
+    "pypdfium2",
+    "pypdfium2_raw",
+    "windows_toasts",
+    "winrt",
+    "av",
+    "anthropic",
+    "openai",
+    "tiktoken_ext",
+):
+    try:
+        found = collect_all(package)
+    except Exception as error:  # a package this build doesn't have (winrt on Linux): say so, carry on
+        print(f"NeuralLoop.spec: skipping {package}: {error}", file=sys.stderr)
+        continue
+    datas += found[0]
+    binaries += found[1]
+    hiddenimports += found[2]
+
+# Packages that read their own version from their metadata.
+for distribution in ("notebooklm-py", "kokoro-onnx", "anthropic", "openai", "pywebview", "keyring", "httpx"):
+    try:
+        datas += copy_metadata(distribution)
+    except Exception:  # not installed in this build: the package that needs it isn't either
+        pass
+
+a = Analysis(
+    [str(ROOT / "windows" / "launcher.py")],
+    pathex=[str(ROOT / "windows"), str(ROOT / "pipeline")],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
+    excludes=["tkinter", "mlx", "mlx_audio", "pytest", "IPython", "matplotlib"],
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+
+app = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name="NeuralLoop",
+    console=False,
+    icon=str(ART / "NeuralLoop.ico"),
+    version=str(ART / "version.txt"),
+)
+pipeline = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name="nl-book",
+    console=True,
+    icon=str(ART / "NeuralLoop.ico"),
+    version=str(ART / "version.txt"),
+)
+COLLECT(app, pipeline, a.binaries, a.datas, strip=False, upx=False, name="NeuralLoop")
