@@ -161,6 +161,18 @@ def test_notebooklms_output_is_read_as_utf8_on_every_system(monkeypatch):
     assert seen["env"]["PYTHONIOENCODING"] == "utf-8" and seen["env"]["PYTHONUTF8"] == "1"
 
 
+def test_usage_that_fails_says_what_notebooklm_answered(monkeypatch):
+    """With --json, NotebookLM writes its error as JSON on stdout, not stderr."""
+    answer = json.dumps({"error": True, "code": "AUTH_ERROR", "message": "Session expired — sign in again"})
+
+    def run(argv, **kwargs):
+        return SimpleNamespace(returncode=1, stdout=answer, stderr="")
+
+    monkeypatch.setattr(account.subprocess, "run", run)
+    monkeypatch.setattr(account, "_cli", lambda: ["/venv/bin/python", "-m", "notebooklm"])
+    assert account.usage() == {"known": False, "problem": "Session expired — sign in again (AUTH_ERROR)"}
+
+
 def test_usage_that_fails_says_why(monkeypatch):
     def run(argv, **kwargs):
         return SimpleNamespace(returncode=1, stdout="", stderr="Traceback…\nAuthError: session expired\n")

@@ -54,6 +54,20 @@ def _last_line(text: str | None) -> str:
     return lines[-1][:200] if lines else ""
 
 
+def _problem(result: subprocess.CompletedProcess) -> str:
+    """Why a NotebookLM command failed: with --json it answers on stdout as {"error", "code", "message"};
+    otherwise its last line on stderr."""
+    try:
+        answer = json.loads(result.stdout or "")
+    except ValueError:
+        answer = None
+    if isinstance(answer, dict) and isinstance(answer.get("message"), str) and answer["message"].strip():
+        code = answer.get("code")
+        message = answer["message"].strip().splitlines()[0][:200]
+        return f"{message} ({code})" if isinstance(code, str) and code else message
+    return _last_line(result.stderr) or _last_line(result.stdout) or f"exit {result.returncode}"
+
+
 def _chrome_installed() -> bool:
     return portable.chrome_installed()
 
@@ -168,7 +182,7 @@ def usage() -> dict:
     except (OSError, subprocess.TimeoutExpired) as error:
         return {"known": False, "problem": _last_line(str(error)) or type(error).__name__}
     if result.returncode != 0:
-        return {"known": False, "problem": _last_line(result.stderr) or f"exit {result.returncode}"}
+        return {"known": False, "problem": _problem(result)}
     try:
         return _usage_summary(json.loads(result.stdout or "{}"))
     except (KeyError, TypeError, ValueError):  # a report in a shape we don't know: say we don't know
