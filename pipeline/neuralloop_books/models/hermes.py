@@ -11,6 +11,7 @@ import re
 import shutil
 import tempfile
 
+from .. import portable
 from ..prompts import wrap_chapter
 from . import QuotaError, SetupError, agent_env, communicate
 
@@ -57,6 +58,7 @@ class HermesModel:
                 stderr=asyncio.subprocess.PIPE,
                 cwd=empty,
                 env=agent_env(("HERMES_",)),
+                **portable.no_window(),
             )
             stdout, stderr = await communicate(process, TIMEOUT)
         if process.returncode != 0:

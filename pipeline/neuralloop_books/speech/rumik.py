@@ -8,6 +8,7 @@ import os
 import platform
 import wave
 
+from .. import portable
 from ..models import SetupError
 
 RATE = 24_000
@@ -18,7 +19,7 @@ _GB = 1024**3
 
 
 def total_memory() -> int:
-    return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+    return portable.total_memory()
 
 
 def model_for(memory: int, quality: str = "fast") -> str:

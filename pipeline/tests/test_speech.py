@@ -7,9 +7,15 @@ from neuralloop_books.speech.rumik import RumikSpeech, model_for
 GB = 1024**3
 
 
-def test_rumik_is_the_voice_and_macos_voices_are_gone():
+def test_rumik_is_the_voice_on_apple_silicon_and_kokoro_elsewhere(monkeypatch):
+    from neuralloop_books.speech.kokoro import KokoroSpeech
+
+    monkeypatch.setattr(speech, "apple_silicon", lambda: True)
     assert isinstance(speech.make_speech("auto"), RumikSpeech)
+    monkeypatch.setattr(speech, "apple_silicon", lambda: False)
+    assert isinstance(speech.make_speech("auto"), KokoroSpeech)
     assert isinstance(speech.make_speech("rumik", "Aisha,Siya"), RumikSpeech)
+    assert isinstance(speech.make_speech("kokoro", "af_bella,am_adam"), KokoroSpeech)
     with pytest.raises(SetupError):
         speech.make_speech("say")
 

@@ -22,6 +22,7 @@ import tempfile
 from collections.abc import Mapping
 from pathlib import Path
 
+from .. import portable
 from ..prompts import wrap_chapter
 from . import KEY_VARIABLES, QuotaError, SetupError, agent_env, communicate
 
@@ -163,7 +164,7 @@ def locked_down_env(empty: str, env: Mapping[str, str] | None = None) -> dict[st
     state stay the person's own. Their providers and default models come along in the config we pass,
     with the variables their `{env:…}` keys name (never our providers' keys)."""
     env = os.environ if env is None else env
-    home = Path(env.get("HOME") or Path.home())
+    home = Path(env.get("HOME") or env.get("USERPROFILE") or Path.home())
     own = {
         "XDG_DATA_HOME": env.get("XDG_DATA_HOME") or str(home / ".local" / "share"),
         "XDG_CACHE_HOME": env.get("XDG_CACHE_HOME") or str(home / ".cache"),
@@ -174,10 +175,14 @@ def locked_down_env(empty: str, env: Mapping[str, str] | None = None) -> dict[st
         **agent_env(env=env),
         **own,
         "HOME": empty,
+        **({"USERPROFILE": empty} if portable.WINDOWS else {}),  # where opencode looks for home on Windows
         "XDG_CONFIG_HOME": str(Path(empty) / "config"),
         "OPENCODE_CONFIG_CONTENT": json.dumps({**json.loads(NO_TOOLS), **settings}) if settings else NO_TOOLS,
         "OPENCODE_DISABLE_PROJECT_CONFIG": "1",
     }
+    if portable.WINDOWS:  # the profile path pieces would lead opencode back to the person's own config
+        locked.pop("HOMEDRIVE", None)
+        locked.pop("HOMEPATH", None)
     for name in _ENV_REFERENCE.findall(json.dumps(settings)):
         if (
             name in env
@@ -218,6 +223,7 @@ class OpencodeModel:
                         stderr=asyncio.subprocess.PIPE,
                         cwd=empty,
                         env=locked_down_env(empty),
+                        **portable.no_window(),
                     )
                     stdout, stderr = await communicate(process, min(PROBE_TIMEOUT, TIMEOUT))
                 _standalone[self.executable] = b"--standalone" in stdout + stderr
@@ -238,6 +244,7 @@ class OpencodeModel:
                 stderr=asyncio.subprocess.PIPE,
                 cwd=empty,
                 env=locked_down_env(empty),
+                **portable.no_window(),
             )
             stdout, stderr = await communicate(process, TIMEOUT)
         if process.returncode != 0:

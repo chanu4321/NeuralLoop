@@ -212,3 +212,25 @@ def test_a_blank_model_uses_the_persons_default_instead_of_the_free_tier(tmp_pat
     sent = json.loads(kwargs["env"]["OPENCODE_CONFIG_CONTENT"])
     assert sent["model"] == "lmstudio/qwen/qwen3-8b" and sent["permission"] == {"*": "deny"}
     assert set(sent) == {"permission", "provider", "model", "small_model"}
+
+
+def test_on_windows_the_profile_folder_is_the_empty_one_too(monkeypatch, tmp_path):
+    """opencode finds its home through USERPROFILE on Windows: that points at the empty folder as well, and
+    the profile path pieces that could lead back to the person's own config are left out."""
+    from neuralloop_books import portable
+
+    monkeypatch.setattr(portable, "WINDOWS", True)
+    env = {
+        "USERPROFILE": str(tmp_path / "pip"),
+        "HOMEDRIVE": "C:",
+        "HOMEPATH": "\\Users\\pip",
+        "SYSTEMROOT": "C:\\Windows",
+        "APPDATA": str(tmp_path / "pip" / "AppData" / "Roaming"),
+        "ANTHROPIC_API_KEY": "sk-ant-never-forwarded-000000",
+    }
+    _settings, built = _config(env, empty=str(tmp_path / "empty"))
+    assert built["USERPROFILE"] == built["HOME"] == str(tmp_path / "empty")
+    assert "HOMEDRIVE" not in built and "HOMEPATH" not in built
+    assert built["SYSTEMROOT"] == "C:\\Windows"  # Windows children need it to start at all
+    assert built["XDG_DATA_HOME"] == str(tmp_path / "pip" / ".local" / "share")  # sign-ins stay theirs
+    assert "ANTHROPIC_API_KEY" not in built

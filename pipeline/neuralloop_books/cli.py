@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-from . import aiconfig
+from . import aiconfig, portable
 from .chapters import UnreadableBookError, UnsafeBookError
 from .config import (
     AUDIO_FORMATS,
@@ -205,7 +205,7 @@ async def _download(setup, host: str, name: str, log, any_will_do: bool = False)
         raise
     except OSError as error:
         raise SetupError(
-            f"Pip couldn't download your Mac's AI ({name}) yet: {safe_message(error, 200)}. "
+            f"Pip couldn't download your {portable.MACHINE}'s AI ({name}) yet: {safe_message(error, 200)}. "
             "Check your internet connection, then try again; NeuralLoop picks up where it stopped."
         ) from error
 

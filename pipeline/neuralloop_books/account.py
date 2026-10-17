@@ -14,13 +14,13 @@ import signal
 import subprocess
 import sys
 from collections.abc import Callable
-from pathlib import Path
 
-CHROME = Path("/Applications/Google Chrome.app")
+from . import portable
+
 # Without Chrome, sign-in uses Chromium. The runtime's own Playwright folder is inside the signed app
 # (read-only; writing there breaks its seal), so a first sign-in downloads Chromium into the person's
 # NeuralLoop folder.
-BROWSERS = Path.home() / "Library" / "Application Support" / "app.neuralloop.books" / "browsers"
+BROWSERS = portable.app_data() / "browsers"
 SIGN_IN_TIMEOUT = 600  # seconds for a person to finish signing in
 
 
@@ -34,7 +34,7 @@ def _cli() -> list[str] | None:
 
 
 def _chrome_installed() -> bool:
-    return CHROME.exists()
+    return portable.chrome_installed()
 
 
 def _chromium_downloaded() -> bool:
@@ -51,7 +51,13 @@ def status() -> dict:
     if not cli:
         return {"signedIn": False, "email": ""}
     try:
-        result = subprocess.run([*cli, "auth", "check", "--json"], capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            [*cli, "auth", "check", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            **portable.no_window(),
+        )
     except (OSError, subprocess.TimeoutExpired):
         return {"signedIn": False, "email": ""}
     try:
@@ -99,7 +105,7 @@ def _run_login(cmd: list[str], env: dict[str, str] | None, timeout: float) -> No
     """Run the login in its own process group, so stopping it closes the browser window it opened too: on
     SIGTERM (or a login that outlives `timeout`) the whole group ends; a stopped sign-in exits with 130."""
     login = subprocess.Popen(
-        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env, start_new_session=True
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env, **portable.own_group()
     )
 
     def stop(signum: int, frame: object) -> None:
@@ -123,16 +129,7 @@ def _run_login(cmd: list[str], env: dict[str, str] | None, timeout: float) -> No
 
 def _end_group(process: subprocess.Popen) -> None:
     """End a process and everything it started (its group): politely, then for good after a few seconds."""
-    for sig, wait in ((signal.SIGTERM, 5), (signal.SIGKILL, 5)):
-        with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(process.pid, sig)
-        try:
-            process.wait(wait)
-            break
-        except subprocess.TimeoutExpired:
-            continue
-    with contextlib.suppress(ProcessLookupError, PermissionError):  # anything the group left behind
-        os.killpg(process.pid, signal.SIGKILL)
+    portable.end_tree(process, wait=5)
 
 
 def sign_out() -> int:
@@ -140,7 +137,9 @@ def sign_out() -> int:
     cli = _cli()
     if not cli:
         return 0
-    result = subprocess.run([*cli, "auth", "logout"], capture_output=True, text=True, timeout=60)
+    result = subprocess.run(
+        [*cli, "auth", "logout"], capture_output=True, text=True, timeout=60, **portable.no_window()
+    )
     return 0 if result.returncode == 0 else 3
 
 
@@ -151,7 +150,9 @@ def usage() -> dict:
     if not cli:
         return {"known": False}
     try:
-        result = subprocess.run([*cli, "usage", "--json"], capture_output=True, text=True, timeout=60)
+        result = subprocess.run(
+            [*cli, "usage", "--json"], capture_output=True, text=True, timeout=60, **portable.no_window()
+        )
         report = json.loads(result.stdout or "{}") if result.returncode == 0 else {}
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
         report = {}
