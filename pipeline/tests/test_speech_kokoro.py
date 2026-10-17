@@ -3,7 +3,6 @@
 import hashlib
 import io
 import sys
-import types
 import wave
 from typing import ClassVar
 
@@ -14,29 +13,30 @@ from neuralloop_books.speech import kokoro
 from neuralloop_books.speech.kokoro import KokoroSpeech
 
 
-class FakeKokoro:
+class FakeModel:
     made: ClassVar[list] = []
 
     def __init__(self, model_path, voices_path):
-        self.paths = (model_path, voices_path)
-        FakeKokoro.made.append(self)
+        self.paths = (str(model_path), str(voices_path))
+        FakeModel.made.append(self)
         self.said: list[tuple[str, str, float]] = []
 
-    def create(self, text, voice, speed=1.0, lang="en-us"):
+    def create(self, phonemes, voice, speed):
         import numpy as np
 
-        self.said.append((text, voice, speed))
-        return np.full(2400, 0.5, dtype=np.float32), 24_000
+        self.said.append((phonemes, voice, speed))
+        return np.full(2400, 0.5, dtype=np.float32)
 
 
 @pytest.fixture
 def fake_kokoro(monkeypatch, tmp_path):
-    module = types.ModuleType("kokoro_onnx")
-    module.Kokoro = FakeKokoro
-    monkeypatch.setitem(sys.modules, "kokoro_onnx", module)
+    """The model and espeak-ng stood in for: espeak "says" the text back with the language asked for."""
+    monkeypatch.setattr(kokoro, "KokoroModel", FakeModel)
+    monkeypatch.setattr(kokoro.espeak, "phonemize", lambda text, lang="en-us": f"{lang}:{text}")
+    monkeypatch.setattr(kokoro.espeak, "require", lambda env=None: ("espeak-ng", None))
     monkeypatch.setenv("NEURALLOOP_KOKORO_DIR", str(tmp_path / "kokoro"))
-    FakeKokoro.made = []
-    return module
+    FakeModel.made = []
+    return FakeModel
 
 
 def test_default_voices_are_a_warm_pair():
@@ -54,9 +54,18 @@ def test_unknown_voices_are_refused(fake_kokoro):
         KokoroSpeech(("Samantha", "Daniel")).check()
 
 
-def test_check_needs_the_package(monkeypatch):
-    monkeypatch.setitem(sys.modules, "kokoro_onnx", None)
+def test_check_needs_onnx_runtime(fake_kokoro, monkeypatch):
+    monkeypatch.setitem(sys.modules, "onnxruntime", None)
     with pytest.raises(SetupError, match="finish setup"):
+        KokoroSpeech(None).check()
+
+
+def test_check_needs_espeak(fake_kokoro, monkeypatch):
+    def missing(env=None):
+        raise SetupError("Kokoro's voices need espeak-ng.")
+
+    monkeypatch.setattr(kokoro.espeak, "require", missing)
+    with pytest.raises(SetupError, match="espeak-ng"):
         KokoroSpeech(None).check()
 
 
@@ -119,7 +128,7 @@ def test_synth_writes_a_16_bit_wav_and_drops_rumik_tags(fake_kokoro, tmp_path, m
     monkeypatch.setattr(kokoro, "ready", lambda folder, quality: True)
     voice = KokoroSpeech(None)
     voice.synth("Well <laugh> that's caching!", "af_heart", "happy, steady pace", tmp_path / "x.wav")
-    assert FakeKokoro.made[0].said == [("Well that's caching!", "af_heart", 1.0)]
+    assert FakeModel.made[0].said == [("en-us:Well that's caching!", "af_heart", 1.0)]
     with wave.open(str(tmp_path / "x.wav")) as out:
         assert (out.getnchannels(), out.getsampwidth(), out.getframerate(), out.getnframes()) == (
             1,
@@ -134,8 +143,22 @@ def test_the_model_is_loaded_once(fake_kokoro, tmp_path, monkeypatch):
     voice = KokoroSpeech(None, quality="best")
     voice.synth("one", "af_heart", "", tmp_path / "a.wav")
     voice.synth("two", "am_michael", "", tmp_path / "b.wav")
-    assert len(FakeKokoro.made) == 1
-    assert FakeKokoro.made[0].paths[0].endswith("kokoro-v1.0.onnx")
+    assert len(FakeModel.made) == 1
+    assert FakeModel.made[0].paths[0].endswith("kokoro-v1.0.onnx")
+
+
+def test_british_voices_speak_british_english(fake_kokoro, tmp_path, monkeypatch):
+    monkeypatch.setattr(kokoro, "ready", lambda folder, quality: True)
+    KokoroSpeech(("bf_emma", "am_michael")).synth("Lovely.", "bf_emma", "", tmp_path / "a.wav")
+    assert FakeModel.made[0].said[0][0] == "en-gb:Lovely."
+
+
+def test_a_line_with_nothing_to_say_is_silence(fake_kokoro, tmp_path, monkeypatch):
+    monkeypatch.setattr(kokoro, "ready", lambda folder, quality: True)
+    KokoroSpeech(None).synth("<laugh>", "af_heart", "", tmp_path / "a.wav")
+    assert FakeModel.made == [] or FakeModel.made[0].said == []
+    with wave.open(str(tmp_path / "a.wav")) as out:
+        assert out.getnframes() == 0
 
 
 def test_a_brisk_delivery_speaks_a_little_faster():

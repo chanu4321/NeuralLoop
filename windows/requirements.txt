@@ -9,7 +9,8 @@ keyring==25.7.0
 Send2Trash==2.1.0
 pypdfium2==5.14.0
 windows-toasts==1.3.1; sys_platform == "win32"
-kokoro-onnx==0.6.1
+onnxruntime==1.31.0
+numpy==2.5.4
 av==19.0.0
 playwright==1.63.0
 notebooklm-py==0.8.5

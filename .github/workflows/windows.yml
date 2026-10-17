@@ -20,8 +20,12 @@ jobs:
         with: { python-version: "3.12" }
       - name: Install the app's packages and PyInstaller (windows/requirements.txt)
         run: python -m pip install --disable-pip-version-check -r windows/requirements.txt
+      - name: Get espeak-ng (the official installer, checked by SHA-256) for the pipeline's tests and the build
+        run: python windows/build.py --espeak
       - name: Pipeline tests, on Windows
         shell: bash
+        env:
+          NEURALLOOP_ESPEAK: ${{ github.workspace }}\build\windows\espeak-ng\espeak-ng.exe
         run: |
           cd pipeline
           python -X faulthandler -m pytest -q -p no:cacheprovider --junitxml=../pipeline-results.xml 2>&1 | tee ../pipeline-results.txt

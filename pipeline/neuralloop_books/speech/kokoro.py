@@ -1,11 +1,11 @@
-"""Kokoro-82M (https://huggingface.co/hexgrad/Kokoro-82M) through kokoro-onnx: the local voice on Windows and
-Linux, where Rumik (Apple silicon only) can't run. Runs on the CPU with ONNX Runtime.
+"""Kokoro-82M (https://huggingface.co/hexgrad/Kokoro-82M): the local voice on Windows and Linux, where Rumik
+(Apple silicon only) can't run. Runs on the CPU with ONNX Runtime (`kokoro_model.py`); its phonemes come from
+espeak-ng, run as a separate program (`espeak.py`).
 
-Model: Apache-2.0. kokoro-onnx: MIT. Its phonemizer and espeak-ng are GPL-3.0 (see NOTICE.md).
-The files come from kokoro-onnx's GitHub release and are checked by SHA-256 before they're used.
+Model: Apache-2.0. espeak-ng: GPL-3.0, never loaded into this process (see NOTICE.md).
+The model files come from kokoro-onnx's GitHub release and are checked by SHA-256 before they're used.
 """
 
-import contextlib
 import hashlib
 import os
 import re
@@ -16,6 +16,8 @@ from pathlib import Path
 
 from .. import portable
 from ..models import SetupError
+from . import espeak
+from .kokoro_model import KokoroModel
 
 RATE = 24_000
 RELEASE = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/"
@@ -126,6 +128,11 @@ def _voice(name: str) -> str:
     return RUMIK_NAMES.get(name, name)
 
 
+def language(voice: str) -> str:
+    """Kokoro's British voices (bf_, bm_) were made with British pronunciations, the rest with American."""
+    return "en-gb" if voice[:1] == "b" else "en-us"
+
+
 class KokoroSpeech:
     name = "Kokoro"
 
@@ -141,36 +148,34 @@ class KokoroSpeech:
                 f"Kokoro's voices include {', '.join(VOICE_IDS[:4])}…; {', '.join(unknown)} isn't one."
             )
         try:
-            import kokoro_onnx  # noqa: F401
+            import onnxruntime  # noqa: F401
         except ImportError as error:
             raise SetupError(
                 "Kokoro voices aren't installed yet. Open NeuralLoop once to finish setup."
             ) from error
+        espeak.require()
 
     def load(self, progress: Callable[[float], None] | None = None):
         if self._model is None:
-            from kokoro_onnx import Kokoro
-
             where = folder()
             if not ready(where, self.quality):
                 download(where, needed(self.quality), progress or (lambda _: None))
-            self._model = Kokoro(str(model_file(self.quality, where)), str(where / VOICES_FILE))
+            self._model = KokoroModel(model_file(self.quality, where), where / VOICES_FILE)
         return self._model
 
     def synth(self, text: str, voice: str, delivery: str, path) -> None:
         import numpy as np
 
         spoken = " ".join(_TAGS.sub(" ", text).split())
+        voice = _voice(voice)
         audio = np.zeros(0, dtype=np.float32)
-        rate = RATE
         if spoken:
-            with contextlib.suppress(ValueError):  # nothing to say once the text is stripped
-                audio, rate = self.load().create(
-                    spoken, voice=_voice(voice), speed=speed_for(delivery or ""), lang="en-us"
-                )
+            phonemes = espeak.phonemize(spoken, language(voice))
+            if phonemes:
+                audio = self.load().create(phonemes, voice, speed_for(delivery or ""))
         pcm = (np.clip(np.asarray(audio, dtype=np.float32), -1.0, 1.0) * 32767).astype("<i2")
         with wave.open(str(path), "wb") as out:
             out.setnchannels(1)
             out.setsampwidth(2)
-            out.setframerate(rate)
+            out.setframerate(RATE)
             out.writeframes(pcm.tobytes())

@@ -70,6 +70,10 @@ python windows/build.py                    # dist/NeuralLoop-<version>-setup.exe
 The Windows CI job (`.github/workflows/windows.yml`) runs both test suites on Windows, builds, makes the sample book with
 the built `nl-book.exe`, and uploads the installer.
 
+Kokoro's phonemes come from the `espeak-ng` program, run as its own process (it's GPL-3.0; NeuralLoop never loads its
+library). The Windows build ships the official one (`build.py` fetches it, pinned by SHA-256); on Linux install it
+(`sudo apt install espeak-ng`); `NEURALLOOP_ESPEAK` points at any other copy.
+
 Not on Windows yet: Google Drive sync and the iPad library (spec 07), and the Mac's "move into Applications" sheet
 (the installer covers it). Voices are Kokoro (Apache-2.0) instead of Rumik, which needs Apple silicon. The installer
 isn't signed, so SmartScreen asks once (**More info → Run anyway**).

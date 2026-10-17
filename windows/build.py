@@ -1,21 +1,25 @@
 """Build NeuralLoop for Windows: `python windows/build.py`, on Windows, after
 `pip install -r windows/requirements.txt`.
 
-1. Draws the icons (NeuralLoop.ico, icon.png) from the iPad's 1024 px icon, and the programs' version info.
+1. Draws the icons (NeuralLoop.ico, icon.png) from the iPad's 1024 px icon and the programs' version info, and
+   gets espeak-ng (the official 64-bit installer, checked by SHA-256, unpacked into build/windows/espeak-ng).
 2. Runs PyInstaller (windows/NeuralLoop.spec) into dist/windows/NeuralLoop: NeuralLoop.exe and nl-book.exe.
 3. Checks the build like a download: nl-book.exe makes the sample book offline (practice model and voices).
 4. Packs it: dist/NeuralLoop-<version>-setup.exe with Inno Setup when `iscc` is installed, and always
    dist/NeuralLoop-<version>-windows.zip.
 
-`--icons` stops after step 1 (it runs anywhere); `--no-check` skips step 3.
+`--icons` only draws the icons (it runs anywhere); `--espeak` only gets espeak-ng (CI runs the pipeline's
+tests against it); `--no-check` skips step 3.
 """
 
 import argparse
+import hashlib
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
 import zipfile
 from pathlib import Path
 
@@ -25,6 +29,12 @@ DIST = ROOT / "dist"
 APP = DIST / "windows" / "NeuralLoop"
 ICON = ROOT / "apple" / "App" / "iPad" / "Assets.xcassets" / "AppIcon.appiconset" / "icon-1024.png"
 ICO_SIZES = [(s, s) for s in (16, 20, 24, 32, 40, 48, 64, 96, 128, 256)]
+ESPEAK = ART / "espeak-ng"
+ESPEAK_VERSION = "1.52.0"
+ESPEAK_MSI = f"https://github.com/espeak-ng/espeak-ng/releases/download/{ESPEAK_VERSION}/espeak-ng.msi"
+ESPEAK_SHA256 = "7f673c709ea5dd579d3b5ebb98688cc575328a6ab7438d2bc405b88cedaeafb9"
+# Python packages that would put GPL code inside nl-book.exe: the build must never carry them.
+GPL_PACKAGES = ("phonemizer", "espeakng_loader", "kokoro_onnx")
 
 
 def version() -> str:
@@ -75,6 +85,38 @@ def version_info(number: str, out: Path = ART) -> None:
     )
 
 
+def fetch_espeak() -> None:
+    """espeak-ng as its upstream developers ship it: espeak-ng.exe, libespeak-ng.dll, and espeak-ng-data, from
+    the official installer, unmodified. It runs as its own program (GPL-3.0; see NOTICE.md)."""
+    if (ESPEAK / "espeak-ng.exe").is_file() and (ESPEAK / "espeak-ng-data").is_dir():
+        return
+    ART.mkdir(parents=True, exist_ok=True)
+    msi = ART / "espeak-ng.msi"
+    if not msi.is_file() or hashlib.sha256(msi.read_bytes()).hexdigest() != ESPEAK_SHA256:
+        with urllib.request.urlopen(ESPEAK_MSI, timeout=120) as answer:
+            data = answer.read()
+        if hashlib.sha256(data).hexdigest() != ESPEAK_SHA256:
+            raise SystemExit(f"The espeak-ng installer from {ESPEAK_MSI} isn't the expected file.")
+        msi.write_bytes(data)
+    unpacked = ART / "espeak-msi"
+    shutil.rmtree(unpacked, ignore_errors=True)
+    run(["msiexec", "/a", str(msi), "/qn", f"TARGETDIR={unpacked}"], "Unpacking espeak-ng")
+    found = next(unpacked.rglob("espeak-ng.exe"), None)
+    if found is None or not (found.parent / "espeak-ng-data").is_dir():
+        raise SystemExit("The espeak-ng installer didn't hold espeak-ng.exe and its data.")
+    shutil.rmtree(ESPEAK, ignore_errors=True)
+    shutil.copytree(found.parent, ESPEAK)
+    (ESPEAK / "SOURCE.txt").write_text(
+        f"eSpeak NG {ESPEAK_VERSION}, unmodified, from its official Windows installer:\n{ESPEAK_MSI}\n"
+        f"SHA-256 {ESPEAK_SHA256}\n\n"
+        "eSpeak NG is free software under the GNU General Public License, version 3 or later (../licenses/"
+        "GPL-3.0.txt). Its source code:\n"
+        f"https://github.com/espeak-ng/espeak-ng/archive/refs/tags/{ESPEAK_VERSION}.tar.gz\n"
+        "NeuralLoop runs it as a separate program to turn narration into phonemes; see NOTICE.md.\n",
+        encoding="utf-8",
+    )
+
+
 def run(argv: list[str], what: str, **kwargs) -> None:
     """A build step; when it fails, its last lines become the error (CI shows them as an annotation)."""
     done = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", **kwargs)
@@ -104,6 +146,19 @@ def check_build() -> None:
             raise SystemExit(f"The build is missing {need}.")
     if not list((APP / "_internal" / "sounds").glob("*.caf")):
         raise SystemExit("The build is missing Silly mode's sounds.")
+    bundled = APP / "_internal" / "espeak-ng"
+    for need in ("espeak-ng.exe", "libespeak-ng.dll", "espeak-ng-data", "SOURCE.txt"):
+        if not (bundled / need).exists():
+            raise SystemExit(f"The build is missing espeak-ng's {need}.")
+    carried = [name for name in GPL_PACKAGES if (APP / "_internal" / name).exists()]
+    if carried:
+        raise SystemExit(f"The build carries {', '.join(carried)}, which would put GPL code in nl-book.exe.")
+    said = subprocess.run(
+        [str(bundled / "espeak-ng.exe"), "-q", "--ipa", "-b", "1", "-v", "en-us", f"--path={bundled}"],
+        input=b"Hello there", capture_output=True, timeout=60,
+    ).stdout.decode("utf-8", "replace")  # fmt: skip
+    if "həlˈoʊ" not in said:
+        raise SystemExit(f"The bundled espeak-ng didn't speak as expected: {said!r}")
     with tempfile.TemporaryDirectory() as home:
         env = dict(os.environ, NEURALLOOP_HOME=home, NEURALLOOP_VIDEO="0", PYTHONIOENCODING="utf-8")
         out = Path(home) / "sample"
@@ -146,6 +201,7 @@ def pack(number: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build NeuralLoop for Windows.")
     parser.add_argument("--icons", action="store_true", help="only draw the icons and version info")
+    parser.add_argument("--espeak", action="store_true", help="only get espeak-ng into build/windows")
     parser.add_argument("--no-check", action="store_true", help="skip running the built pipeline")
     args = parser.parse_args()
     for stream in (sys.stdout, sys.stderr):  # the pipeline's lines (✓) print on a cp1252 console too
@@ -160,6 +216,10 @@ def main() -> int:
         raise SystemExit(
             "PyInstaller builds for the system it runs on: build NeuralLoop for Windows on Windows"
         )
+    fetch_espeak()
+    if args.espeak:
+        print(f"espeak-ng in {ESPEAK}")
+        return 0
     pyinstaller()
     if not args.no_check:
         check_build()

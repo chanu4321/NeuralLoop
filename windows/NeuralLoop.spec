@@ -4,7 +4,9 @@
 #   NeuralLoop.exe  the app (no console window)
 #   nl-book.exe     the book pipeline, a console program (the app runs it for every book; its output is read)
 # The app's own files go next to them: the window (neuralloop_desktop/ui), Pip's poses and fonts (inside
-# neuralloop_books/assets), Silly mode's sounds, the sample book, the icon, and the licenses.
+# neuralloop_books/assets), Silly mode's sounds, the sample book, the icon, and the licenses. espeak-ng (GPL-3.0)
+# ships as its own unmodified program in `espeak-ng/`, run by the pipeline as a separate process; no GPL
+# library is ever bundled into the programs themselves (`GPL_PACKAGES`, refused below).
 import sys
 from pathlib import Path
 
@@ -26,6 +28,7 @@ def _without_winrt(binaries, import_packages, *rest):
 build_main.find_binary_dependencies = _without_winrt
 
 ROOT = Path(SPECPATH).parent
+GPL_PACKAGES = ["phonemizer", "espeakng_loader", "kokoro_onnx"]  # kokoro_onnx imports the other two
 ART = ROOT / "build" / "windows"
 
 datas = [
@@ -37,6 +40,7 @@ datas = [
     (str(ROOT / "NOTICE.md"), "."),
     (str(ROOT / "licenses"), "licenses"),
 ]
+datas.append((str(ART / "espeak-ng"), "espeak-ng"))  # `python windows/build.py` puts it there
 datas += [(str(sound), "sounds") for sound in sorted((ROOT / "apple" / "App" / "Resources").glob("NeuralLoop-*.caf"))]
 binaries = []
 hiddenimports = [
@@ -51,12 +55,6 @@ hiddenimports = [
 for package in (
     "neuralloop_books",
     "webview",
-    "kokoro_onnx",
-    "espeakng_loader",
-    "phonemizer",
-    "language_tags",
-    "segments",
-    "csvw",
     "notebooklm",
     "playwright",
     "pypdfium2",
@@ -78,7 +76,7 @@ for package in (
     hiddenimports += found[2]
 
 # Packages that read their own version from their metadata.
-for distribution in ("notebooklm-py", "kokoro-onnx", "anthropic", "openai", "pywebview", "keyring", "httpx"):
+for distribution in ("notebooklm-py", "anthropic", "openai", "pywebview", "keyring", "httpx"):
     try:
         datas += copy_metadata(distribution)
     except Exception:  # not installed in this build: the package that needs it isn't either
@@ -93,6 +91,7 @@ a = Analysis(
     excludes=[
         "tkinter", "mlx", "mlx_audio", "pytest", "IPython", "matplotlib",
         "onnxruntime.quantization", "onnxruntime.tools", "onnxruntime.transformers", "onnxruntime.training",
+        *GPL_PACKAGES,
     ],  # fmt: skip
     noarchive=False,
 )
