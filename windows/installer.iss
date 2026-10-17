@@ -35,7 +35,11 @@ LicenseFile={#Source}\_internal\LICENSE
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-CloseApplications=yes
+; Setup closes NeuralLoop itself (PrepareToInstall below) instead of asking through the Restart Manager: both
+; programs and anything they started (a book being prepared, espeak-ng, a browser for sign-in) must be gone
+; before their files can be replaced, and a half-closed app is never a choice worth offering.
+CloseApplications=no
+RestartApplications=no
 
 [Tasks]
 Name: "startup"; Description: "Start NeuralLoop when I sign in to Windows (Pip's nudges need it running)"; Flags: checkedonce
@@ -53,4 +57,27 @@ Name: "{userstartup}\NeuralLoop"; Filename: "{app}\NeuralLoop.exe"; Parameters: 
 Filename: "{app}\NeuralLoop.exe"; Description: "Open NeuralLoop"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "{cmd}"; Parameters: "/C taskkill /IM NeuralLoop.exe /T /F"; Flags: runhidden; RunOnceId: "StopNeuralLoop"
+Filename: "{sys}\taskkill.exe"; Parameters: "/IM NeuralLoop.exe /T /F"; Flags: runhidden; RunOnceId: "StopNeuralLoop"
+Filename: "{sys}\taskkill.exe"; Parameters: "/IM nl-book.exe /T /F"; Flags: runhidden; RunOnceId: "StopBookPreparation"
+
+[Messages]
+ReadyLabel2a=Click Install to continue. If NeuralLoop is open, Setup closes it first; your books and progress stay.
+ReadyLabel2b=Click Install to continue. If NeuralLoop is open, Setup closes it first; your books and progress stay.
+
+[Code]
+procedure StopProgram(const Name: String);
+var
+  Code: Integer;
+begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM ' + Name + ' /T /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  { The app, then any book being prepared (with what it started). A book that was mid-way carries on from
+    where it stopped the next time NeuralLoop opens. }
+  StopProgram('NeuralLoop.exe');
+  StopProgram('nl-book.exe');
+  Sleep(800);
+  Result := '';
+end;

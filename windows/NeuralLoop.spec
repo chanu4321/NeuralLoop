@@ -105,7 +105,7 @@ app = EXE(
     name="NeuralLoop",
     console=False,
     icon=str(ART / "NeuralLoop.ico"),
-    version=str(ART / "version.txt"),
+    version=str(ART / "version-NeuralLoop.txt"),
 )
 pipeline = EXE(
     pyz,
@@ -115,6 +115,6 @@ pipeline = EXE(
     name="nl-book",
     console=True,
     icon=str(ART / "NeuralLoop.ico"),
-    version=str(ART / "version.txt"),
+    version=str(ART / "version-nl-book.txt"),
 )
 COLLECT(app, pipeline, a.binaries, a.datas, strip=False, upx=False, name="NeuralLoop")

@@ -9,6 +9,7 @@ NeuralLoop.exe --background         started with Windows: just Pip in the notifi
 
 import contextlib
 import json
+import os
 import runpy
 import sys
 import threading
@@ -250,9 +251,13 @@ def run_app(background: bool = False) -> int:
         icon=str(icon_file()),
     )
     quitting.set()
+    api._flush_all()
     library.stop()
     tray.stop()
-    return 0
+    # Quitting ends the process, whatever is still winding down (a tray or WebView2 thread can otherwise keep
+    # NeuralLoop.exe alive, and an installer then finds it "still running"). Progress is saved above; a book
+    # being prepared carries on in nl-book.exe.
+    os._exit(0)
 
 
 def icon_file():

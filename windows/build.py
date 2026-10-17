@@ -54,22 +54,34 @@ def draw_icons(out: Path = ART) -> None:
     picture.resize((256, 256), Image.LANCZOS).save(out / "icon.png")
 
 
+PROGRAMS = {  # file stem: what Task Manager and an installer's "in use" list call it
+    "NeuralLoop": "NeuralLoop",
+    "nl-book": "NeuralLoop book preparation",
+}
+
+
 def version_info(number: str, out: Path = ART) -> None:
-    """The programs' Properties → Details (PyInstaller's version file format)."""
+    """Each program's Properties → Details (PyInstaller's version file format): version-NeuralLoop.txt and
+    version-nl-book.txt."""
+    for stem, description in PROGRAMS.items():
+        _version_file(number, stem, description, out)
+
+
+def _version_file(number: str, stem: str, description: str, out: Path) -> None:
     parts = [int(p) for p in [*number.split("."), "0", "0", "0"][:4]]
     out.mkdir(parents=True, exist_ok=True)
     fields = {
         "CompanyName": "NeuralLoop",
-        "FileDescription": "NeuralLoop",
+        "FileDescription": description,
         "FileVersion": number,
-        "InternalName": "NeuralLoop",
+        "InternalName": stem,
         "LegalCopyright": "PolyForm Noncommercial License 1.0.0",
-        "OriginalFilename": "NeuralLoop.exe",
+        "OriginalFilename": f"{stem}.exe",
         "ProductName": "NeuralLoop",
         "ProductVersion": number,
     }
     strings = ",\n".join(f"          StringStruct({k!r}, {v!r})" for k, v in fields.items())
-    (out / "version.txt").write_text(
+    (out / f"version-{stem}.txt").write_text(
         f"""VSVersionInfo(
   ffi=FixedFileInfo(filevers={tuple(parts)}, prodvers={tuple(parts)}, mask=0x3f, flags=0x0, OS=0x40004,
                     fileType=0x1, subtype=0x0, date=(0, 0)),
