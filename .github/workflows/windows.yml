@@ -21,11 +21,17 @@ jobs:
       - name: Install the app's packages and PyInstaller (windows/requirements.txt)
         run: python -m pip install --disable-pip-version-check -r windows/requirements.txt
       - name: Pipeline tests, on Windows
-        run: cd pipeline; python -m pytest -q
+        run: cd pipeline; python -m pytest -q -p no:cacheprovider --junitxml=../pipeline-results.xml
       - name: The Windows app's tests
-        run: cd windows; python -m pytest -q
+        if: success() || failure()
+        run: cd windows; python -m pytest -q -p no:cacheprovider --junitxml=../windows-results.xml
+      - name: Failing tests as annotations
+        if: failure()
+        run: python scripts/ci_annotate.py pipeline-results.xml windows-results.xml
       - name: Build NeuralLoop.exe and nl-book.exe, make the sample book with them, pack the installer
-        # Inno Setup comes with GitHub's Windows images; build.py packs a zip either way.
+        # Inno Setup comes with GitHub's Windows images; build.py packs a zip either way. It runs even when a test
+        # failed, so one run shows everything.
+        if: success() || failure()
         run: python windows/build.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

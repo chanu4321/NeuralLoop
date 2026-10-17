@@ -75,13 +75,22 @@ def version_info(number: str, out: Path = ART) -> None:
     )
 
 
+def run(argv: list[str], what: str, **kwargs) -> None:
+    """A build step; when it fails, its last lines become the error (CI shows them as an annotation)."""
+    done = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", **kwargs)
+    print(done.stdout, done.stderr, sep="\n")
+    if done.returncode != 0:
+        tail = "\n".join((done.stdout + "\n" + done.stderr).strip().splitlines()[-25:])
+        raise SystemExit(f"{what} failed (exit {done.returncode}):\n{tail}")
+
+
 def pyinstaller() -> None:
-    subprocess.run(
+    run(
         [
             sys.executable, "-m", "PyInstaller", str(ROOT / "windows" / "NeuralLoop.spec"), "--noconfirm",
             "--distpath", str(DIST / "windows"), "--workpath", str(ART / "pyinstaller"),
         ],
-        check=True,
+        "PyInstaller",
         cwd=ROOT,
     )  # fmt: skip
 
@@ -104,8 +113,8 @@ def check_build() -> None:
         )  # fmt: skip
         print(done.stdout[-2000:])
         if done.returncode != 0 or not (out / "book.json").exists():
-            print(done.stderr[-4000:], file=sys.stderr)
-            raise SystemExit(f"nl-book.exe couldn't make the sample book (exit {done.returncode}).")
+            tail = "\n".join((done.stdout + "\n" + done.stderr).strip().splitlines()[-25:])
+            raise SystemExit(f"nl-book.exe couldn't make the sample book (exit {done.returncode}):\n{tail}")
 
 
 def pack(number: str) -> None:
@@ -121,7 +130,7 @@ def pack(number: str) -> None:
     if not iscc:
         print("Inno Setup isn't installed, so there's no installer (the zip has everything).")
         return
-    subprocess.run(
+    run(
         [
             iscc,
             f"/DVersion={number}",
@@ -129,7 +138,7 @@ def pack(number: str) -> None:
             f"/DOut={DIST}",
             str(ROOT / "windows" / "installer.iss"),
         ],
-        check=True,
+        "Inno Setup",
     )
     print(f"Wrote {DIST / f'NeuralLoop-{number}-setup.exe'}")
 
@@ -157,4 +166,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except SystemExit as stop:
+        if isinstance(stop.code, str) and os.environ.get("GITHUB_ACTIONS"):
+            print("::error title=windows/build.py::" + stop.code.replace("%", "%25").replace("\n", "%0A"))
+        raise
