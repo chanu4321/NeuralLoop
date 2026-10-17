@@ -165,10 +165,22 @@ def main() -> int:
     return 0
 
 
+def annotate(message: str) -> None:
+    """CI shows this as an error on the run (its log can't always be read)."""
+    if os.environ.get("GITHUB_ACTIONS"):
+        text = message.replace("%", "%25").replace("\n", "%0A")
+        print(f"::error title=windows/build.py::{text}", flush=True)
+
+
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except SystemExit as stop:
-        if isinstance(stop.code, str) and os.environ.get("GITHUB_ACTIONS"):
-            print("::error title=windows/build.py::" + stop.code.replace("%", "%25").replace("\n", "%0A"))
+        if isinstance(stop.code, str):
+            annotate(stop.code)
+        raise
+    except BaseException:
+        import traceback
+
+        annotate("\n".join(traceback.format_exc().splitlines()[-30:]))
         raise
