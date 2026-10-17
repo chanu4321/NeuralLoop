@@ -9,6 +9,21 @@ import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
+import PyInstaller.building.build_main as build_main
+
+# On Windows, PyInstaller imports every collected package in one helper process to learn the DLL folders they add.
+# onnxruntime crashes (an access violation) when it's imported after WinRT, the toasts' bindings; no NeuralLoop
+# process ever loads both (the toasts live in NeuralLoop.exe, Kokoro in nl-book.exe). WinRT adds no DLL folders,
+# so it's left out of that one step.
+_find_binary_dependencies = build_main.find_binary_dependencies
+
+
+def _without_winrt(binaries, import_packages, *rest):
+    kept = [p for p in import_packages if p.split(".")[0] not in ("winrt", "windows_toasts")]
+    return _find_binary_dependencies(binaries, kept, *rest)
+
+
+build_main.find_binary_dependencies = _without_winrt
 
 ROOT = Path(SPECPATH).parent
 ART = ROOT / "build" / "windows"

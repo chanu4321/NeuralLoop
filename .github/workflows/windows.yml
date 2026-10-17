@@ -36,9 +36,6 @@ jobs:
       - name: Failing tests as annotations
         if: failure()
         run: python scripts/ci_annotate.py pipeline-results.xml windows-results.xml
-      - name: onnxruntime imports cleanly next to the other packages
-        if: success() || failure()
-        run: python scripts/ci_import_check.py
       - name: Build NeuralLoop.exe and nl-book.exe, make the sample book with them, pack the installer
         # Inno Setup comes with GitHub's Windows images; build.py packs a zip either way. It runs even when a test
         # failed, so one run shows everything.
