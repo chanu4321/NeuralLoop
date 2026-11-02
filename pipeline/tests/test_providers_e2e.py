@@ -460,7 +460,8 @@ def test_a_hermes_without_a_model_is_setup_needed(tmp_path):
 
     script = tmp_path / "hermes"
     script.write_text(
-        "#!/bin/sh\necho \"hermes -z: agent failed: No inference provider configured. Run 'hermes model' to "
+        '#!/bin/sh\nif [ "$2" = --help ]; then echo "  --query-file PATH"; exit 0; fi\n'
+        "echo \"hermes: agent failed: No inference provider configured. Run 'hermes model' to "
         'choose a provider and model." >&2\nexit 1\n'
     )
     script.chmod(0o755)

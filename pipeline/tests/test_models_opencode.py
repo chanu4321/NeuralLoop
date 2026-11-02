@@ -198,7 +198,7 @@ def test_a_blank_model_uses_the_persons_default_instead_of_the_free_tier(tmp_pat
         def __init__(self, argv):
             self.argv = argv
 
-        async def communicate(self):
+        async def communicate(self, stdin=None):
             return (b"--standalone" if "--help" in self.argv else b'{"ok": true}'), b""
 
     async def fake_exec(*argv, **kwargs):
@@ -234,3 +234,17 @@ def test_on_windows_the_profile_folder_is_the_empty_one_too(monkeypatch, tmp_pat
     assert built["SYSTEMROOT"] == "C:\\Windows"  # Windows children need it to start at all
     assert built["XDG_DATA_HOME"] == str(tmp_path / "pip" / ".local" / "share")  # sign-ins stay theirs
     assert "ANTHROPIC_API_KEY" not in built
+
+
+def test_on_windows_the_persons_config_is_found_in_their_profile_not_a_unix_home(monkeypatch, tmp_path):
+    """A HOME on Windows is usually Git Bash's or MSYS's; opencode's own config lives under the profile."""
+    from neuralloop_books import portable
+
+    monkeypatch.setattr(portable, "WINDOWS", True)
+    profile, msys = tmp_path / "pip", tmp_path / "msys-home"
+    (profile / ".config" / "opencode").mkdir(parents=True)
+    (profile / ".config" / "opencode" / "opencode.json").write_text(json.dumps({"model": "deepseek/v4"}))
+    env = {"USERPROFILE": str(profile), "HOME": str(msys)}
+    settings, built = _config(env, empty=str(tmp_path / "empty"))
+    assert settings.get("model") == "deepseek/v4"
+    assert built["XDG_DATA_HOME"] == str(profile / ".local" / "share")
