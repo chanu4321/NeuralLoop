@@ -24,8 +24,9 @@ Two parts, one repo:
 ## Golden rules
 
 1. **Test first.** Write the failing test, watch it fail, make it pass, refactor. Every task in `docs/specs` lists its tests.
-2. **Logic stays pure and tested; screens stay thin.** Pure logic belongs in `pipeline/neuralloop_books/*.py` and
-   `apple/Sources/NeuralLoopCore/*.swift` (tested with Swift Testing in `apple/Tests`). SwiftUI views (`apple/App/Views`) and
+2. **Logic stays pure and tested; screens stay thin.** Pure logic belongs in `pipeline/neuralloop_books/*.py`,
+   `apple/Sources/NeuralLoopCore/*.swift` (tested with Swift Testing in `apple/Tests`), and
+   `windows/neuralloop_desktop/core/*.py` (the same rules for Windows; a rule changed in one core changes in the other, with its tests). SwiftUI views (`apple/App/Views`) and
    services (`apple/App/Services`) only render, wire events, and do I/O.
 3. **Never hand-edit generated files:** `apple/App/Resources/pip-rig.json`, `apple/App/Resources/PipLayers/*.png` (each layer at 3x, redrawn only when its art hash changes), and `pipeline/neuralloop_books/assets/pip-poses.js`
    (run `make pip`, i.e. `python design/pip/generate_pip.py`; animations are data in `ANIM` there, feeding both); `apple/App/Resources/AppIcon.icns` (`python design/pip/make_app_icon.py`);
@@ -51,7 +52,7 @@ Two parts, one repo:
 ```bash
 make setup      # once: creates .venv, installs hash-locked dev tools (scripts/dev-requirements.txt) + Chromium
 make test       # all tests (pytest, swift test)
-make lint       # ruff check + format over pipeline/ scripts/ design/ (root ruff.toml), shellcheck if installed
+make lint       # ruff check + format over pipeline/ scripts/ design/ windows/ (root ruff.toml), shellcheck if installed
 make check      # lint + test + check-generated (Pip rig/layers, icons, DMG background are current) (CI runs this plus an Xcode build and a Pip staleness check: .github/workflows/check.yml)
 make mac        # build and open the Mac app (needs Xcode and XcodeGen: brew install xcodegen)
 make package    # dist/NeuralLoop-<version>.dmg with the runtime inside (unsigned: "Open Anyway" once)
@@ -60,7 +61,7 @@ make pip        # regenerate Pip's artwork
 python pipeline/nl_book.py --dry-run --out /tmp/demo   # whole pipeline offline with a practice model and voices
 ```
 
-Per part: `cd pipeline && pytest -q` · `cd apple && swift test`.
+Per part: `cd pipeline && pytest -q` · `cd apple && swift test` · `cd windows && pytest -q` (`make test-windows`; not part of `make test`: CI runs it in the Windows workflow).
 
 For development the app runs the pipeline from the repo's `.venv`, which `make setup` creates (override with `PY=`).
 Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage Voices`, `-NLPreviewPanel YES`,
@@ -113,6 +114,12 @@ Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage V
 | `App/Services/DriveAccount.swift`, `DriveSync.swift` | Google sign-in for Drive (tokens in the Keychain) and the sync loop (every 2 min, after studying, when a chapter opens); `-NLFakeDrive URL` (Debug only) uses `scripts/fake_drive.py` |
 | `App/iPad/` | The iPad's entry point (`NeuralLoopPadApp`: library, book screens), its profile button and Settings sheet (account and sync; `DriveSyncCard`: Drive sign-in, what's synced, when). Books added on the iPad go to `inbox/` for the Mac (`Library.addToInbox`) |
 | `project.yml` | XcodeGen spec: `NeuralLoop` (macOS; Debug knows the repo path, Release runs only its bundled runtime) and `NeuralLoopPad` (iPadOS 17, same App sources minus the pipeline runner, AI settings, notifications, move-in, and the Mac's App struct); `PipLayers` is a folder resource in both |
+
+### `windows` — the Windows app (Python package `neuralloop_desktop`; spec 07's laptops)
+| File | Responsibility |
+|---|---|
+| `core/` | Pure, tested ports of `NeuralLoopCore` (same rules, same file formats): `jsonish` (Swift's JSON number handling, half-away-from-zero rounding, sorted keys), `book` (book.json/book-data.js, `file_in` path containment: no `/`, `\`, `:` or NUL escapes), `progress` (lenient decoding, merging other devices, `save` with only this device's log), `coverage` (play spans, reading credit), `loop` (stages, FSRS, due cards, quiz state, auto steps), `study` (remake scoring, plain math, recall word match, year log, shelf summary), `prep` (`PrepWindow`, `PrepActivity`/`PrepProgress`, run problems, usage), `pipeline_run` (line parser, arguments, titles, `environment` like `PipelineEnvironment` plus `PYTHONIOENCODING=utf-8`), `aiconfig`, `nudges` (`Nudges`, Silly steps, `NudgeDelivery`, `NudgeMoment`), `caf` (Silly mode's IMA4 CAF sounds → WAV; FFmpeg can't read them) |
+| `tests/` | pytest: the Swift tests' cases for every core rule, and the shared cases in `testdata/core` (FSRS, progress merging, the prep window, nudges) that `apple/Tests` runs too |
 
 ### Other
 `scripts/build-runtime.sh` (self-contained runtime: Python 3.12.14, hash-locked wheels from `scripts/runtime-requirements.txt`
