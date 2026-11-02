@@ -82,3 +82,23 @@ def test_the_pipeline_always_writes_utf8(installed, monkeypatch):
     assert entry.main(["--dry-run"]) == 0
     sys.stdout.flush()
     assert "✓ chapter 1".encode() in raw.getvalue()
+
+
+@pytest.mark.parametrize("flag", [[], ["--background"], ["--browser"]])
+def test_the_app_settles_its_library_folder_before_anything_else(monkeypatch, tmp_path, flag):
+    """The old roaming library moves first, and every run it starts gets the app's own folder."""
+    from neuralloop_books import portable
+    from neuralloop_desktop.app import paths
+
+    monkeypatch.delenv("NEURALLOOP_HOME", raising=False)
+    monkeypatch.setattr(portable, "WINDOWS", False)
+    monkeypatch.setattr(paths.sys, "platform", "darwin")
+    monkeypatch.setattr(paths.Path, "home", lambda: tmp_path)
+    moved = []
+    monkeypatch.setattr(paths, "move_old_library", lambda: moved.append(1) or False)
+    monkeypatch.setattr(entry, "run_app", lambda background=False: 0)
+    monkeypatch.setattr(entry, "run_browser", lambda: 0)
+    assert entry.main(flag) == 0
+    assert moved == [1]
+    assert entry.os.environ["NEURALLOOP_HOME"].endswith(paths.DEVELOPMENT_FOLDER)
+    monkeypatch.delenv("NEURALLOOP_HOME")

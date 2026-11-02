@@ -36,9 +36,19 @@ def main(argv: list[str] | None = None) -> int:
         sys.argv = [argv[1], *argv[2:]]
         runpy.run_module(argv[1], run_name="__main__", alter_sys=True)
         return 0
+    settle_home()
     if argv[:1] == ["--browser"]:
         return run_browser()
     return run_app(background=argv[:1] == ["--background"])
+
+
+def settle_home() -> None:
+    """Before anything reads the library: move an older build's roaming library to the local folder, and
+    hand the app's folder to every run it starts (on a Mac, never the Mac app's own)."""
+    from .app import paths
+
+    paths.move_old_library()
+    paths.use_own_home()
 
 
 def utf8_output() -> None:

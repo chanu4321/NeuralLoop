@@ -2,8 +2,9 @@
 
 It serves the window's files, Pip's poses and fonts (the pipeline's own), a book's media (with byte ranges, so
 podcasts and videos can seek), PDF chapter pages as pictures, and Silly mode's sounds (converted from the
-Mac's .caf once, `core.caf`). A book's files are served only from inside that book's folder; anything else is
-a 404."""
+Mac's .caf once, `core.caf`). A book's files are served only from inside that book's folder, only as media,
+pictures and PDFs (never HTML or SVG, which can carry script), and never a dot-file at any level; anything
+else is a 404. Every answer carries the window's Content-Security-Policy."""
 
 import contextlib
 import json
@@ -45,6 +46,26 @@ TYPES = {
     ".webp": "image/webp",
     ".ico": "image/x-icon",
 }
+
+
+# What a book's folder may serve to the window: its media, its figures and its chapter PDFs.
+BOOK_TYPES = (".m4a", ".mp4", ".wav", ".mp3", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf")
+# Scripts only from the app's own files; styles may be inline (Pip's poses are SVG with style attributes).
+CSP = "; ".join(
+    (
+        "default-src 'none'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob:",
+        "media-src 'self' blob:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "base-uri 'none'",
+        "form-action 'none'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+    )
+)
 
 
 def contained(root: Path, relative: str) -> Path | None:
@@ -93,7 +114,10 @@ class Server:
             if not pipeline_run.is_valid_id(book_id):
                 return None, None
             folder = paths.books() / book_id
-            if relative.startswith("."):  # private files (locks, page cache, …) are never served
+            names = relative.split("/")
+            if any(name.startswith(".") for name in names):  # private files (locks, page cache, …), anywhere
+                return None, None
+            if Path(names[-1]).suffix.lower() not in BOOK_TYPES:
                 return None, None
             return books.file_in(folder, relative), None
         if kind == "page":
@@ -162,6 +186,10 @@ class Server:
 
             def log_message(self, *args) -> None:  # quiet
                 return
+
+            def end_headers(self) -> None:
+                self.send_header("Content-Security-Policy", CSP)
+                super().end_headers()
 
             def _deny(self, code: int = 404) -> None:
                 self.send_response(code)

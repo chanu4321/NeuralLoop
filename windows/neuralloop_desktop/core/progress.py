@@ -212,14 +212,18 @@ def merged_same_device(a: dict, b: dict) -> dict:
 
 
 def load(folder: Path, now: float | None = None) -> dict:
-    """No file is a fresh start; one that isn't JSON is kept aside (progress.json.unreadable-<time>)."""
+    """No file is a fresh start; one that isn't a JSON object is kept aside (progress.json.unreadable-<time>),
+    never overwritten."""
     path = folder / "progress.json"
     try:
         data = path.read_bytes()
     except OSError:
         return empty()
     try:
-        return normalize(json.loads(data))
+        parsed = json.loads(data)
+        if not isinstance(parsed, dict):
+            raise ValueError("not an object")
+        return normalize(parsed)
     except ValueError:
         stamp = int(now if now is not None else time.time())
         with contextlib.suppress(OSError):

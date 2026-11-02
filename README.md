@@ -116,7 +116,7 @@ python windows/build.py      # dist\NeuralLoop-<version>-setup.exe (with Inno Se
 ```
 
 What's different from the Mac: no Google Drive sync or iPad library yet, Kokoro voices instead of Rumik, and keys
-are kept in Windows Credential Manager. Your books live in `%APPDATA%\NeuralLoop`.
+are kept in Windows Credential Manager. Your books live in `%LOCALAPPDATA%\NeuralLoop`.
 
 </details>
 

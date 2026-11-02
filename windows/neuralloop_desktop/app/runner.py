@@ -133,17 +133,16 @@ class Run:
         with open(log, "ab") as out:
             out.write(f"\n— {dt.datetime.now():%Y-%m-%d %H:%M:%S} —\n".encode())
             offset = out.tell()
-        output = open(log, "ab")  # noqa: SIM115 - the child keeps writing to it; closed here once it has its own
-        self.process = subprocess.Popen(
-            [*command(), *arguments],
-            stdout=output,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.DEVNULL,
-            env=environment(),
-            cwd=str(paths.home()),
-            **portable.own_group(),
-        )
-        output.close()  # the child has its own handle now
+        with open(log, "ab") as output:  # the child gets its own handle; ours closes either way
+            self.process = subprocess.Popen(
+                [*command(), *arguments],
+                stdout=output,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
+                env=environment(),
+                cwd=str(paths.home()),
+                **portable.own_group(),
+            )
         self.follower = LogFollower(log, offset, on_line)
         self.follower.start()
 

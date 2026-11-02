@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from neuralloop_desktop.core import coverage, progress
 
 
@@ -221,3 +222,11 @@ def test_watching_round_trips_compactly_and_merges_as_a_union():
         [0, 5]
     ]
     assert progress.merged([m, pad]) == m
+
+
+@pytest.mark.parametrize("text", ["[1, 2]", "null", '"progress"', "42"])
+def test_a_progress_file_that_is_json_but_not_an_object_is_kept_aside_too(tmp_path, text):
+    (tmp_path / "progress.json").write_text(text)
+    assert progress.load(tmp_path, now=42) == progress.empty()
+    assert (tmp_path / "progress.json.unreadable-42").read_text() == text
+    assert not (tmp_path / "progress.json").exists()

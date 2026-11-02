@@ -66,7 +66,7 @@ python -m neuralloop_desktop               # the real app, on Windows (from wind
 python windows/build.py                    # dist/NeuralLoop-<version>-setup.exe and a zip (`make windows`)
 ```
 
-`NEURALLOOP_HOME` puts the library somewhere other than `%APPDATA%\NeuralLoop`, so a test library never touches yours.
+`NEURALLOOP_HOME` puts the library somewhere other than `%LOCALAPPDATA%\NeuralLoop` (on a Mac or Linux, the app uses its own `NeuralLoop for Windows (development)` folder next to the Mac app's, never the Mac app's library), so a test library never touches yours.
 The Windows CI job (`.github/workflows/windows.yml`) runs both test suites on Windows, builds, makes the sample book with
 the built `nl-book.exe`, and uploads the installer.
 

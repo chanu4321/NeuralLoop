@@ -70,11 +70,13 @@ def test_the_server_serves_only_the_books_own_files_with_ranges(prepared):
             server, f"/{server.token}/book/sample-book/{audio}", {"Range": "bytes=0-99"}
         )
         assert status == 206 and len(body) == 100 and headers["Content-Range"].startswith("bytes 0-99/")
-        assert get(server, f"/{server.token}/book/sample-book/book.json")[0] == 200
         assert get(server, f"/{server.token}/assets/pip-poses.js")[2].startswith(b"window.PIP=")
-        assert get(server, f"/{server.token}/ui/index.html")[0] == 200
+        status, headers, _ = get(server, f"/{server.token}/ui/index.html")
+        assert status == 200 and "script-src 'self'" in headers["Content-Security-Policy"]
         for bad in (
             "/nope/book/sample-book/book.json",
+            f"/{server.token}/book/sample-book/book.json",  # a book's files are media, pictures and PDFs only
+            f"/{server.token}/book/sample-book/pipeline.log",
             f"/{server.token}/book/sample-book/../../runs.json",
             f"/{server.token}/book/sample-book/.running",
             f"/{server.token}/book/../settings.json",

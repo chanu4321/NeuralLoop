@@ -2,7 +2,7 @@
 ;   iscc /DVersion=0.2.2 /DSource=dist\windows\NeuralLoop /DOut=dist windows\installer.iss
 ; Installs for this person only (no administrator needed) into %LOCALAPPDATA%\Programs\NeuralLoop, with a Start
 ; menu entry and an optional "start with Windows" (so Pip's nudges come without opening the app). Books, progress
-; and settings live in %APPDATA%\NeuralLoop and stay when the app is removed.
+; and settings live in %LOCALAPPDATA%\NeuralLoop and stay when the app is removed.
 
 #ifndef Version
   #define Version "0.0.0"

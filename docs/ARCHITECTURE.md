@@ -233,7 +233,7 @@ books/<id>/
 In your Google Drive (hidden app folder, only NeuralLoop can see it): `books/<id>/…` (everything above except private
 files: logs, locks, state, your source copy, other devices' downloads), `books/<id>/progress/<device>.json`, `inbox/`.
 
-On Windows: the same layout in `%APPDATA%\NeuralLoop\` (no `sync-state.json` or `inbox/` yet), plus `voices/kokoro/`
+On Windows: the same layout in `%LOCALAPPDATA%\NeuralLoop\` (an older build's `%APPDATA%\NeuralLoop` moves there once) (no `sync-state.json` or `inbox/` yet), plus `voices/kokoro/`
 (the Kokoro voice files) and `webview/` (the window's own browser storage). API keys: Windows Credential Manager.
 
 API keys: the macOS Keychain. Google Drive tokens: the Keychain (this device only). NotebookLM's session: managed by
