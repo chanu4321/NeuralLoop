@@ -12,7 +12,7 @@ UNAME := $(shell uname -s)
 CLT := /Library/Developer/CommandLineTools/Library/Developer
 SWIFT_FLAGS := $(if $(findstring CommandLineTools,$(shell xcode-select -p 2>/dev/null)),-Xswiftc -F$(CLT)/Frameworks -Xlinker -F$(CLT)/Frameworks -Xlinker -rpath -Xlinker $(CLT)/Frameworks -Xlinker -rpath -Xlinker $(CLT)/usr/lib,)
 
-.PHONY: setup test check lint check-generated runtime mac package pip windows windows-dev
+.PHONY: setup test test-windows check lint check-generated runtime mac package pip windows windows-dev
 
 setup:            ## .venv plus every dev tool (scripts/dev-requirements.txt, hash-checked) and Chromium
 	@if [ "$(PY)" = "$(VENV)/bin/python" ] && [ ! -x "$(PY)" ]; then \
@@ -33,9 +33,8 @@ check-generated:  ## generated art matches its sources (hashes and sizes only: n
 	$(PY) design/pip/make_app_icon.py --check
 	$(PY) design/dmg/make_background.py --check
 
-test:             ## all tests: Python (the pipeline and the Windows app's), and Swift on macOS
+test:             ## all tests: the pipeline's, and Swift on macOS (the Windows app's: make test-windows)
 	cd pipeline && $(PY) -m pytest -q
-	cd windows && $(PY) -m pytest -q
 	@if [ "$(UNAME)" = Darwin ] && command -v swift >/dev/null; then cd apple && swift test $(SWIFT_FLAGS); \
 	else echo "Swift tests skipped: they need macOS with Swift (CI runs them in the swift job)"; fi
 
@@ -61,6 +60,9 @@ mac:              ## build and open the SwiftUI Mac app (needs Xcode and XcodeGe
 
 windows:          ## NeuralLoop for Windows (run on Windows): dist/NeuralLoop-<version>-setup.exe and a zip
 	$(PY) windows/build.py
+
+test-windows:     ## the Windows app's tests (needs pip install -r windows/requirements.txt; CI runs them on Windows)
+	cd windows && $(PY) -m pytest -q
 
 windows-dev:      ## the Windows app's window in a browser, on any OS (no tray or native dialogs)
 	cd windows && $(PY) -m neuralloop_desktop --browser

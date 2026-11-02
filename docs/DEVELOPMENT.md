@@ -60,7 +60,7 @@ Working on it:
 
 ```bash
 pip install -r windows/requirements.txt   # on Windows; elsewhere `make setup` plus the packages you need
-cd windows && python -m pytest -q          # also part of `make test`, on any OS
+cd windows && python -m pytest -q          # make test-windows; not part of make test (CI runs it on Windows)
 make windows-dev                           # the window in your browser (no tray or native dialogs), on any OS
 python -m neuralloop_desktop               # the real app, on Windows (from windows/)
 python windows/build.py                    # dist/NeuralLoop-<version>-setup.exe and a zip (`make windows`)
