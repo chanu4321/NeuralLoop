@@ -15,7 +15,7 @@ Windows app carries them in `_internal` next to `NeuralLoop.exe`.
 | **Rumik OSS-1** voices (`rumik-ai/rumik-oss-1-mlx-4bit`, `-8bit`), downloaded on first use | Podcast and explainer narration made on your Mac | **CC BY-NC 4.0** | **Non-commercial use only.** Anyone selling NeuralLoop, or using it commercially, needs a separate licence from Rumik or a different voice engine. |
 | **Google NotebookLM**, through `notebooklm-py` | The default way study material is made | Google's terms of service; `notebooklm-py` is MIT | `notebooklm-py` uses unofficial interfaces that can change at any time. Check Google's terms before any commercial use. |
 | **FFmpeg with x264 and x265**, inside PyAV | Encoding explainer videos | FFmpeg LGPL-3.0-or-later; x264 and x265 **GPL-2.0-or-later** | See "FFmpeg, x264 and x265" below. |
-| **espeak-ng** (Windows app; on Linux, the one you install) | Turning narration text into phonemes for the Kokoro voices | **GPL-3.0-or-later** | Shipped unmodified as its own program and run as a separate process; NeuralLoop never loads its library. See "Bundled in the Windows app" below. |
+| **espeak-ng**, the program, where Kokoro voices are used (bundled in the Windows app; on Linux, the one you install) | Turning narration text into phonemes for the Kokoro voices | **GPL-3.0-or-later** | Run unmodified as its own program, as a separate process; NeuralLoop never loads its library. See "Kokoro voices" below. |
 
 ## Nudge sounds
 
@@ -122,12 +122,9 @@ binaries described in this file were built from. If any of them stops working, o
 the corresponding source for those binaries, at no more than the cost of providing it, for at least three years after
 we last distributed a runtime containing them.
 
-## Bundled in the Windows app
+## Kokoro voices (Windows and Linux)
 
-`python windows/build.py` (PyInstaller 6.22.3) puts one Python 3.12 and the packages pinned in
-`windows/requirements.txt` into `NeuralLoop\_internal`. Each package's licence ships in its `*.dist-info` folder there,
-except where noted. Beyond what the Mac's runtime has (`anthropic`, `openai`, `notebooklm-py`, `playwright`, PyAV,
-`pypdf`, `numpy`; see above; the Windows app downloads Chromium only when Chrome isn't installed):
+Where Rumik can't run, the pipeline voices podcasts and explainers with Kokoro (`speech/kokoro.py`):
 
 | Component | Version | License | Notes |
 |---|---|---|---|
@@ -135,6 +132,23 @@ except where noted. Beyond what the Mac's runtime has (`anthropic`, `openai`, `n
 | Kokoro's phoneme vocabulary (`pipeline/neuralloop_books/assets/kokoro-vocab.json`) | 1.0 | Apache-2.0 (`licenses/Apache-2.0.txt`) | From Kokoro-82M's `config.json`. |
 | kokoro-onnx (Copyright 2025 thewh1teagle) | 0.6.1 | MIT (`licenses/kokoro-onnx-MIT.txt`) | Not shipped: `speech/kokoro_model.py` drives the model the way kokoro-onnx does (padding, style rows, batching, trimming). |
 | ONNX Runtime | 1.31.0 | MIT | Runs the Kokoro model. |
+| **eSpeak NG** | 1.52.0 | **GPL-3.0-or-later** (`licenses/GPL-3.0.txt`) | Turns text into Kokoro's phonemes. |
+
+eSpeak NG is GPL-3.0-or-later. The pipeline (`speech/espeak.py`) runs the unmodified `espeak-ng` program as a separate
+process, sending text and reading phonemes back; no GPL library or Python package (such as `phonemizer`,
+`espeakng_loader` or `kokoro_onnx`) is loaded into NeuralLoop's own process. The Kokoro voices themselves are
+Apache-2.0, so unlike Rumik they allow commercial use.
+
+## Bundled in the Windows app
+
+`python windows/build.py` (PyInstaller 6.22.3) puts one Python 3.12 and the packages pinned in
+`windows/requirements.txt` into `NeuralLoop\_internal`. Each package's licence ships in its `*.dist-info` folder there,
+except where noted. Beyond what the Mac's runtime has (`anthropic`, `openai`, `notebooklm-py`, `playwright`, PyAV,
+`pypdf`, `numpy`; see above; the Windows app downloads Chromium only when Chrome isn't installed) and Kokoro's parts
+(above; ONNX Runtime ships, the voices are downloaded):
+
+| Component | Version | License | Notes |
+|---|---|---|---|
 | **eSpeak NG** (`_internal\espeak-ng\`: `espeak-ng.exe`, `libespeak-ng.dll`, `espeak-ng-data`) | 1.52.0 | **GPL-3.0-or-later** (`licenses/GPL-3.0.txt`) | Unmodified, from the official 64-bit installer (https://github.com/espeak-ng/espeak-ng/releases/download/1.52.0/espeak-ng.msi, SHA-256 `7f673c709ea5dd579d3b5ebb98688cc575328a6ab7438d2bc405b88cedaeafb9`). Source: https://github.com/espeak-ng/espeak-ng/archive/refs/tags/1.52.0.tar.gz. `SOURCE.txt` next to it says the same. |
 | pywebview (Copyright Roman Sirokov) | 6.2.1 | BSD-3-Clause | The window, drawn by Microsoft Edge WebView2, which is part of Windows and isn't bundled. |
 | pystray (Copyright Moses Palmér) | 0.19.5 | LGPL-3.0 (`licenses/LGPL-3.0.txt`) | Pip in the notification area. It ships as its own unmodified Python files, which can be replaced. |
@@ -145,11 +159,9 @@ except where noted. Beyond what the Mac's runtime has (`anthropic`, `openai`, `n
 | windows-toasts, with PyWinRT | 1.3.1 | Apache-2.0; PyWinRT MIT | Notifications. |
 | PyInstaller's bootloader | 6.22.3 | GPL-2.0-or-later with the bootloader exception, which allows shipping it with any program | `NeuralLoop.exe` and `nl-book.exe` start through it. |
 
-eSpeak NG is GPL-3.0-or-later. It ships beside NeuralLoop as its own unmodified program, and the pipeline
-(`speech/espeak.py`) runs it as a separate process, sending text and reading phonemes back; no GPL library or
-Python package is loaded into `NeuralLoop.exe` or `nl-book.exe` (`windows/build.py` checks that the build carries
-none of `phonemizer`, `espeakng_loader` or `kokoro_onnx`). The Kokoro voices themselves are Apache-2.0, so unlike
-Rumik they allow commercial use. The source code offer above covers eSpeak NG too.
+eSpeak NG ships beside NeuralLoop as its own unmodified program, run as a separate process (see "Kokoro voices");
+`windows/build.py` checks that the build carries none of `phonemizer`, `espeakng_loader` or `kokoro_onnx`. The source
+code offer above covers eSpeak NG too.
 
 The Windows build's PyAV wheel carries its own FFmpeg build, from the same `pyav-ffmpeg` scripts ("FFmpeg, x264 and x265" above). On Windows
 the pipeline asks for Windows' own H.264 encoder (Media Foundation, `h264_mf`) right after VideoToolbox, so x264 is

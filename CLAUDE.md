@@ -126,7 +126,7 @@ Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage V
 | `ui/` | The window (HTML/CSS/JS, no build step): `app.js` (shelf, welcome, Settings, Pip's panel), `book.js` (the five steps, players with play tracking, reading credit, quiz, remake, mind map, cards, book map), `graph.js` (layout and explorer), `pip.html` + `pip.js` (the big Pip; no inline scripts anywhere: the CSP allows only files), `browser-shim.js` (`?browser=1`: the same API over HTTP for `--browser`) |
 | `main.py` | `NeuralLoop.exe` (the app; `--background` from the Start-up folder: only the tray), `nl-book.exe` (the pipeline; `-m notebooklm|playwright` too), `--browser` (development) |
 | `build.py`, `NeuralLoop.spec`, `installer.iss`, `launcher.py`, `requirements.txt` | The build (icons from the iPad's 1024 px icon, PyInstaller, a dry run with the built `nl-book.exe`, Inno Setup per-user installer, zip); CI: `.github/workflows/windows.yml` |
-| `tests/` | pytest: the Swift tests' cases for every core rule, plus the library, server, nudging, and entry points end to end with a practice run |
+| `tests/` | pytest: the Swift tests' cases for every core rule, and the shared cases in `testdata/core` (FSRS, progress merging, the prep window, nudges) that `apple/Tests` runs too; plus the library, server, nudging, and entry points end to end with a practice run |
 
 ### Other
 `scripts/build-runtime.sh` (self-contained runtime: Python 3.12.14, hash-locked wheels from `scripts/runtime-requirements.txt`
