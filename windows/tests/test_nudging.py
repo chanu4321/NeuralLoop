@@ -13,11 +13,29 @@ def test_what_windows_says_maps_to_the_moment():
         "screenLocked": False,
         "fullScreenInFront": False,
         "microphoneInUse": False,
+        "quietTime": False,
     }
     assert moment.from_state(moment.QUNS_NOT_PRESENT, False)["screenLocked"]
-    for busy in (moment.QUNS_BUSY, moment.QUNS_RUNNING_D3D_FULL_SCREEN, moment.QUNS_PRESENTATION_MODE):
+    for busy in (
+        moment.QUNS_BUSY,
+        moment.QUNS_RUNNING_D3D_FULL_SCREEN,
+        moment.QUNS_PRESENTATION_MODE,
+        moment.QUNS_APP,  # a Store app full screen
+    ):
         assert moment.from_state(busy, False)["fullScreenInFront"]
     assert moment.from_state(5, True)["microphoneInUse"]
+    assert moment.from_state(moment.QUNS_QUIET_TIME, False)["quietTime"]
+    assert moment.from_state(5, False, fills_a_display=True)[
+        "fullScreenInFront"
+    ]  # any display, not just the main
+
+
+def test_a_window_filling_any_display_counts_as_full_screen():
+    main, second = (0, 0, 1920, 1080), (1920, 0, 4480, 1440)
+    assert moment.fills_one(second, [main, second])  # a video full screen on the second display
+    assert moment.fills_one((1910, -5, 4490, 1450), [main, second])  # borders past the edges still count
+    assert not moment.fills_one((2000, 100, 3000, 900), [main, second])  # an ordinary window
+    assert not moment.fills_one((0, 0, 1920, 1040), [main, second])  # maximised, above the taskbar
 
 
 class Recorder:
@@ -47,10 +65,35 @@ def test_a_silly_nudge_shows_the_big_pip_and_its_toast_stays_silent(monkeypatch)
     assert rec.shown == ["sadViolin"] and rec.toasts == [("🎻 Pip is playing a tiny sad violin", True)]
 
 
-def test_during_a_call_or_a_game_it_stays_a_notification(monkeypatch):
+def test_during_a_call_or_a_game_it_stays_a_notification_with_the_moods_sound(monkeypatch):
+    """No big Pip then, but the nudge still sounds like itself (a toast can't carry the app's own sound)."""
     n, rec = notifier(monkeypatch, now={"microphoneInUse": True})
     n.post("😱 FAHHH!", "", nudge=nudges.sample("shocked"))
-    assert rec.shown == [] and rec.toasts == [("😱 FAHHH!", False)]
+    assert rec.shown == [] and rec.played == ["shocked"] and rec.toasts == [("😱 FAHHH!", True)]
+
+
+def test_when_the_big_pip_cant_show_the_sound_still_plays(monkeypatch):
+    n, rec = notifier(monkeypatch)
+    rec.shows = False  # its window couldn't open
+    n.post("🎻", "", nudge=nudges.sample("sadViolin"))
+    assert rec.shown == ["sadViolin"] and rec.played == ["sadViolin"] and rec.toasts[0][1] is True
+
+
+def test_with_the_big_pip_off_the_moods_sound_plays_with_the_toast(monkeypatch):
+    settings = {**nudges.default_settings(), "bigPip": False}
+    n, rec = notifier(monkeypatch, settings=settings)
+    n.post("😿", "", nudge=nudges.sample("sadMeow"))
+    assert rec.shown == [] and rec.played == ["sadMeow"]
+
+
+def test_in_windows_focus_time_nothing_plays(monkeypatch):
+    n, rec = notifier(monkeypatch, now={"quietTime": True})
+    n.post("😿", "", nudge=nudges.sample("sadMeow"))
+    assert rec.shown == [] and rec.played == [] and rec.toasts == [("😿", False)]
+
+
+def test_a_game_still_shows_no_big_pip(monkeypatch):
+    n, rec = notifier(monkeypatch, now={"fullScreenInFront": True})
     n, rec = notifier(monkeypatch, now={"fullScreenInFront": True})
     n.post("😿", "", nudge=nudges.sample("sadMeow"), test=True)  # a test from Settings is still heard
     assert rec.played == ["sadMeow"] and rec.toasts[0][1] is True

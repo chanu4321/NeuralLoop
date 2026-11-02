@@ -42,13 +42,19 @@ class Notifier:
     ) -> None:
         playing = False
         if nudge and nudge["mood"] != "gentle":
-            current = self.settings()
-            now = moment.now() if nudges.needs_moment(nudge["mood"], current) else {}
-            who = nudges.player(nudge["mood"], current, now, test)
-            if who == "bigPip":
-                playing = self.big_pip(nudge)
+            mood, current = nudge["mood"], self.settings()
+            now = moment.now()
+            who = nudges.player(mood, current, now, test)
+            if now.get("quietTime") and not test:
+                pass  # Windows' Focus: the toast alone, which Windows holds until Focus ends
+            elif who == "bigPip":
+                playing = self.big_pip(nudge) or self.play(mood)  # its window couldn't open: still heard
             elif who == "app":
-                playing = self.play(nudge["mood"])
+                playing = self.play(mood)
+            else:
+                # On a Mac the notification carries the mood's sound; a Windows toast can't carry an app's
+                # own sound, so the app plays it next to a silent toast. Focus holds both.
+                playing = self.play(mood)
         self.toast(title, body, book_id, silent=playing)
 
     def play(self, mood: str) -> bool:
