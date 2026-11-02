@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pip</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="../assets/pip-poses.js"></script>
+  <style>
+    html, body { background: transparent !important; overflow: hidden; }
+    .big { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+      transform: scale(.2); opacity: 0; transition: transform .45s cubic-bezier(.3, 1.5, .5, 1), opacity .3s; }
+    .big.in { transform: scale(1); opacity: 1; }
+    .emoji { font-size: 64px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.2)); }
+    .bubble { background: var(--surface); color: var(--ink); border-radius: 18px; padding: 10px 16px; max-width: 360px; text-align: center;
+      font-family: var(--display); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+    .bubble small { display: block; font-family: var(--body); font-weight: 400; color: var(--ink2); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="big" id="big" role="alert" aria-live="assertive"></div>
+  <script src="pip.js"></script>
+</body>
+</html>
