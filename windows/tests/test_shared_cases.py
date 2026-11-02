@@ -1,4 +1,5 @@
-"""The cases the Swift core's tests run too (testdata/core): FSRS, progress merging, the prep window, nudges."""
+"""The cases the Swift core's tests run too (testdata/core): FSRS, progress merging, the prep window and
+nudges."""
 
 import json
 from pathlib import Path
