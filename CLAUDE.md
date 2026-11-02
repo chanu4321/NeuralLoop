@@ -59,6 +59,7 @@ make mac        # build and open the Mac app (needs Xcode and XcodeGen: brew ins
 make package    # dist/NeuralLoop-<version>.dmg with the runtime inside (unsigned: "Open Anyway" once)
 make runtime    # just the self-contained runtime (build/runtime)
 make pip        # regenerate Pip's artwork
+make windows    # on Windows: dist/NeuralLoop-<version>-Setup.exe and a zip (windows/build.py)
 make windows-dev  # the Windows app's window in a browser, on any OS
 python pipeline/nl_book.py --dry-run --out /tmp/demo   # whole pipeline offline with a practice model and voices
 ```
@@ -124,6 +125,7 @@ Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage V
 | `app/` | I/O: `paths` (`%LOCALAPPDATA%\NeuralLoop`, an older `%APPDATA%` library moved there once; anywhere but Windows its own development folder, never the Mac app's library; the installed bundle), `store` (each change one read-change-write under one lock, `update`), `keys` (keyring → Windows Credential Manager, service "NeuralLoop"), `runner` (`nl-book.exe --pipeline` installed, `pipeline/nl_book.py` from the repo; output to pipeline.log, `LogFollower`), `library` (the shelf, background loop (each step on its own: one that fails never stops it; auto-resume before the first allowance check), auto-resume, a run claimed in one locked step and never alongside an allowance check, chapter ready, nudges, Recycle Bin removal), `session` (one open book), `server` (`127.0.0.1` with a random token path and Host check, a Content-Security-Policy on every answer (scripts only from the app's files): the window, Pip's assets, a book's media, pictures and PDFs only (never HTML, SVG or data; no dot-file at any level) with byte ranges and containment, PDF pages via pypdfium2, sounds, `/show` for one instance), `api` (pywebview's `js_api`), `moment` (`SHQueryUserNotificationState` incl. Store apps and Focus time, the window in front against every display, microphone in use), `notify` (toasts via windows-toasts, else the tray balloon; a silly nudge without the big Pip plays its mood's sound next to a silent toast, except in Focus time), `tray` (pystray menu) |
 | `ui/` | The window (HTML/CSS/JS, no build step): `app.js` (shelf, welcome, Settings, Pip's panel), `book.js` (the five steps, players with play tracking, reading credit, quiz, remake, mind map, cards, book map), `graph.js` (layout and explorer), `pip.html` + `pip.js` (the big Pip; no inline scripts anywhere: the CSP allows only files), `browser-shim.js` (`?browser=1`: the same API over HTTP for `--browser`) |
 | `main.py` | `NeuralLoop.exe` (the app; `--background` from the Start-up folder: only the tray), `nl-book.exe` (the pipeline; `-m notebooklm|playwright` too), `--browser` (development) |
+| `build.py`, `NeuralLoop.spec`, `installer.iss`, `launcher.py`, `requirements.txt` | The build (icons from the iPad's 1024 px icon, PyInstaller, a dry run with the built `nl-book.exe`, Inno Setup per-user installer, zip); CI: `.github/workflows/windows.yml` |
 | `tests/` | pytest: the Swift tests' cases for every core rule, and the shared cases in `testdata/core` (FSRS, progress merging, the prep window, nudges) that `apple/Tests` runs too; plus the library, server, nudging, and entry points end to end with a practice run |
 
 ### Other
@@ -222,7 +224,7 @@ rebuilds a stale runtime, signs nested code inside out, builds the DMG with dmgb
 2. `docs/specs/06-speed.md` — reading-order queue, media lane, streamed podcast lines and submit-then-poll for NotebookLM done;
    next: a warm worker process.
 3. `docs/specs/04-native-macos-app.md` + `docs/specs/07-every-device.md` — the SwiftUI Mac app is the product (the Tauri app
-   and the per-book study site are gone; their screens live in the app). Next: Windows and Linux laptops. Done: Pip's rig,
+   and the per-book study site are gone; their screens live in the app). Windows is done (`windows/`; no Drive sync yet); next: Drive sync on Windows, then Linux laptops. Done: Pip's rig,
    the first-launch sign-in and guided tour, the Google Drive library and the iPad app (spec 07; needs the owner's OAuth client
    ID in `apple/Config/Google.xcconfig`, see `docs/DEVELOPMENT.md`).
 4. `docs/specs/02-book-import-and-parsing.md` — parse preview, correct parsing, tests on real-world shapes.

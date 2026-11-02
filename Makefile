@@ -12,7 +12,7 @@ UNAME := $(shell uname -s)
 CLT := /Library/Developer/CommandLineTools/Library/Developer
 SWIFT_FLAGS := $(if $(findstring CommandLineTools,$(shell xcode-select -p 2>/dev/null)),-Xswiftc -F$(CLT)/Frameworks -Xlinker -F$(CLT)/Frameworks -Xlinker -rpath -Xlinker $(CLT)/Frameworks -Xlinker -rpath -Xlinker $(CLT)/usr/lib,)
 
-.PHONY: setup test test-windows check lint check-generated runtime mac package pip windows-dev
+.PHONY: setup test test-windows check lint check-generated runtime mac package pip windows windows-dev
 
 setup:            ## .venv plus every dev tool (scripts/dev-requirements.txt, hash-checked) and Chromium
 	@if [ "$(PY)" = "$(VENV)/bin/python" ] && [ ! -x "$(PY)" ]; then \
@@ -57,6 +57,9 @@ mac:              ## build and open the SwiftUI Mac app (needs Xcode and XcodeGe
 	cd apple && xcodegen generate --quiet && xcodebuild -project NeuralLoop.xcodeproj -scheme NeuralLoop -configuration Debug \
 		-derivedDataPath build/dd CODE_SIGN_IDENTITY="NeuralLoop Development" build -quiet
 	open apple/build/dd/Build/Products/Debug/NeuralLoop.app
+
+windows:          ## NeuralLoop for Windows (run on Windows): dist/NeuralLoop-<version>-Setup.exe and a zip
+	$(PY) windows/build.py
 
 test-windows:     ## the Windows app's tests (needs pip install -r windows/requirements.txt; CI runs them on Windows)
 	cd windows && $(PY) -m pytest -q

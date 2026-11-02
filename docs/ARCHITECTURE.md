@@ -284,6 +284,7 @@ make check     # every linter and test (Python and Swift)
 make mac       # build and open the Mac app
 make package   # dist/NeuralLoop-<version>.dmg
 make pip       # regenerate Pip after changing generate_pip.py
+make windows   # on Windows: the installer and a zip (python windows/build.py)
 ```
 
 The iPad app: `cd apple && xcodegen generate && open NeuralLoop.xcodeproj`, scheme **NeuralLoopPad** (see

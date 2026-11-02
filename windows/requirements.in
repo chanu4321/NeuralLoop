@@ -1,4 +1,4 @@
-# What the Windows app and its tests need, for windows/requirements.txt (hash-locked). After a change:
+# What the Windows app, its tests and its build need, for windows/requirements.txt (hash-locked). After a change:
 #   uv pip compile windows/requirements.in --python-platform windows --python-version 3.12 --generate-hashes -o windows/requirements.txt
 # Then: pip install --require-hashes -r windows/requirements.txt
 #       pip install --no-deps --no-build-isolation -e ./pipeline -e ./windows
@@ -19,6 +19,8 @@ keyring==25.7.0
 Send2Trash==2.1.0
 pypdfium2==5.14.0
 windows-toasts==1.3.1; sys_platform == "win32"
-# The tests:
+# The build and the tests:
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
 pytest==9.1.1
 setuptools==84.0.0  # builds the editable installs above without fetching an unpinned build backend
