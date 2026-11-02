@@ -11,7 +11,8 @@ private let casesFolder = URL(fileURLWithPath: #filePath)
 
 private func cases(_ name: String) throws -> [[String: Any]] {
     let data = try Data(contentsOf: casesFolder.appendingPathComponent(name))
-    let file = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let parsed = try JSONSerialization.jsonObject(with: data)
+    let file = try #require(parsed as? [String: Any])
     return try #require(file["cases"] as? [[String: Any]])
 }
 
@@ -29,8 +30,10 @@ private func close(_ a: Double, _ b: Double) -> Bool { abs(a - b) <= 1e-9 * max(
         let name = c["name"] as? String ?? "?"
         var card: CardState? = try c["card"] is NSNull ? nil : decode(CardState.self, c["card"])
         for step in try #require(c["steps"] as? [[String: Any]]) {
-            let rating = try #require(Rating(rawValue: try #require(step["rating"] as? Int)))
-            card = FSRS.grade(card, rating, now: try #require(step["now"] as? Double))
+            let number = try #require(step["rating"] as? Int)
+            let rating = try #require(Rating(rawValue: number))
+            let now = try #require(step["now"] as? Double)
+            card = FSRS.grade(card, rating, now: now)
         }
         let got = try #require(card)
         let expect = try decode(CardState.self, c["expect"])
