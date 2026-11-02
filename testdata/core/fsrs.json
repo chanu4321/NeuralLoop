@@ -1,0 +1,227 @@
+{
+ "about": "FSRS-4.5 as both cores schedule cards: grade `card` (null: never seen) with each step's rating (1 again, 2 hard, 3 good, 4 easy) at `now` (Unix ms); `expect` is the card after the last step (s and d to 1e-9).",
+ "cases": [
+  {
+   "name": "a new card rated 1",
+   "card": null,
+   "steps": [
+    {
+     "rating": 1,
+     "now": 1760000000000
+    }
+   ],
+   "expect": {
+    "s": 0.4872,
+    "d": 7.6214,
+    "reps": 1,
+    "last": 1760000000000,
+    "due": 1760000600000.0
+   }
+  },
+  {
+   "name": "a new card rated 2",
+   "card": null,
+   "steps": [
+    {
+     "rating": 2,
+     "now": 1760000000000
+    }
+   ],
+   "expect": {
+    "s": 1.4003,
+    "d": 6.3916,
+    "reps": 1,
+    "last": 1760000000000,
+    "due": 1760086400000.0
+   }
+  },
+  {
+   "name": "a new card rated 3",
+   "card": null,
+   "steps": [
+    {
+     "rating": 3,
+     "now": 1760000000000
+    }
+   ],
+   "expect": {
+    "s": 3.7145,
+    "d": 5.1618,
+    "reps": 1,
+    "last": 1760000000000,
+    "due": 1760345600000.0
+   }
+  },
+  {
+   "name": "a new card rated 4",
+   "card": null,
+   "steps": [
+    {
+     "rating": 4,
+     "now": 1760000000000
+    }
+   ],
+   "expect": {
+    "s": 13.8206,
+    "d": 3.9320000000000004,
+    "reps": 1,
+    "last": 1760000000000,
+    "due": 1761209600000.0
+   }
+  },
+  {
+   "name": "good, then good on time, then good late",
+   "card": null,
+   "steps": [
+    {
+     "rating": 3,
+     "now": 1760000000000
+    },
+    {
+     "rating": 3,
+     "now": 1760345600000
+    },
+    {
+     "rating": 3,
+     "now": 1762592000000
+    }
+   ],
+   "expect": {
+    "s": 71.15427390397933,
+    "d": 5.0867342378,
+    "reps": 3,
+    "last": 1762592000000,
+    "due": 1768726400000.0
+   }
+  },
+  {
+   "name": "forgotten after a long gap",
+   "card": null,
+   "steps": [
+    {
+     "rating": 3,
+     "now": 1760000000000
+    },
+    {
+     "rating": 4,
+     "now": 1761728000000
+    },
+    {
+     "rating": 1,
+     "now": 1777280000000
+    }
+   ],
+   "expect": {
+    "s": 8.736891170554966,
+    "d": 5.9833717403,
+    "reps": 3,
+    "last": 1777280000000,
+    "due": 1777280600000.0
+   }
+  },
+  {
+   "name": "hard twice in a day",
+   "card": null,
+   "steps": [
+    {
+     "rating": 2,
+     "now": 1760000000000
+    },
+    {
+     "rating": 2,
+     "now": 1760003600000
+    }
+   ],
+   "expect": {
+    "s": 1.4267575737935974,
+    "d": 7.1850299,
+    "reps": 2,
+    "last": 1760003600000,
+    "due": 1760090000000.0
+   }
+  },
+  {
+   "name": "easy all the way reaches the year's cap",
+   "card": null,
+   "steps": [
+    {
+     "rating": 4,
+     "now": 1760000000000
+    },
+    {
+     "rating": 4,
+     "now": 1791536000000
+    },
+    {
+     "rating": 4,
+     "now": 1823072000000
+    },
+    {
+     "rating": 4,
+     "now": 1854608000000
+    },
+    {
+     "rating": 4,
+     "now": 1886144000000
+    },
+    {
+     "rating": 4,
+     "now": 1917680000000
+    }
+   ],
+   "expect": {
+    "s": 8870.142097058328,
+    "d": 1.0,
+    "reps": 6,
+    "last": 1917680000000,
+    "due": 1949216000000.0
+   }
+  },
+  {
+   "name": "another device's clock is ahead: no time passed, never negative",
+   "card": {
+    "s": 5.0,
+    "d": 4.0,
+    "reps": 3,
+    "last": 1760086400000,
+    "due": 1760518400000
+   },
+   "steps": [
+    {
+     "rating": 3,
+     "now": 1760000000000
+    }
+   ],
+   "expect": {
+    "s": 5.0,
+    "d": 3.997892,
+    "reps": 4,
+    "last": 1760000000000,
+    "due": 1760432000000.0
+   }
+  },
+  {
+   "name": "a card saved by an older app",
+   "card": {
+    "s": 0.05,
+    "d": 11.0,
+    "reps": 1,
+    "last": 1759913600000,
+    "due": 1760000000000
+   },
+   "steps": [
+    {
+     "rating": 3,
+     "now": 1760000000000
+    }
+   ],
+   "expect": {
+    "s": 0.1,
+    "d": 10.0,
+    "reps": 2,
+    "last": 1760000000000,
+    "due": 1760086400000.0
+   }
+  }
+ ]
+}
