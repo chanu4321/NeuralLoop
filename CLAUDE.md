@@ -14,12 +14,13 @@ OpenRouter, local Ollama, LM Studio or any OpenAI-compatible server, opencode, H
 **Listen & watch → Read → Recall → Map → Remember**. Chapters unlock one at a time; the book map grows as chapters are mapped.
 Pip, a cute red panda, lives in the menu bar and nudges gently (never guilt).
 
-Two parts, one repo:
+Three parts, one repo:
 
 | Part | Language | Path | Runs as |
 |---|---|---|---|
 | Book pipeline | Python 3.10+ | `pipeline` | `python pipeline/nl_book.py BOOK …` (the app runs it from its bundled runtime) |
 | Mac app | Swift 6 core + SwiftUI | `apple` | `NeuralLoop.app` (`make mac` to build and open, `make package` for the DMG) |
+| Windows app | Python core + pywebview (HTML/JS window) | `windows` | `NeuralLoop.exe` + `nl-book.exe` (`python windows/build.py` on Windows, `make windows-dev` for the window in a browser) |
 
 ## Golden rules
 
@@ -58,6 +59,7 @@ make mac        # build and open the Mac app (needs Xcode and XcodeGen: brew ins
 make package    # dist/NeuralLoop-<version>.dmg with the runtime inside (unsigned: "Open Anyway" once)
 make runtime    # just the self-contained runtime (build/runtime)
 make pip        # regenerate Pip's artwork
+make windows-dev  # the Windows app's window in a browser, on any OS
 python pipeline/nl_book.py --dry-run --out /tmp/demo   # whole pipeline offline with a practice model and voices
 ```
 
@@ -119,7 +121,10 @@ Development launch flags for screenshots: `-NLOpenSettings YES -NLSettingsPage V
 | File | Responsibility |
 |---|---|
 | `core/` | Pure, tested ports of `NeuralLoopCore` (same rules, same file formats): `jsonish` (Swift's JSON number handling, half-away-from-zero rounding, sorted keys), `book` (book.json/book-data.js, `file_in` path containment: no `/`, `\`, `:` or NUL escapes), `progress` (lenient decoding, merging other devices, `save` with only this device's log), `coverage` (play spans, reading credit), `loop` (stages, FSRS, due cards, quiz state, auto steps), `study` (remake scoring, plain math, recall word match, year log, shelf summary), `prep` (`PrepWindow`, `PrepActivity`/`PrepProgress`, run problems, usage), `pipeline_run` (line parser, arguments, titles, `environment` like `PipelineEnvironment` plus `PYTHONIOENCODING=utf-8`), `aiconfig`, `nudges` (`Nudges`, Silly steps, `NudgeDelivery`, `NudgeMoment`), `caf` (Silly mode's IMA4 CAF sounds → WAV; FFmpeg can't read them) |
-| `tests/` | pytest: the Swift tests' cases for every core rule, and the shared cases in `testdata/core` (FSRS, progress merging, the prep window, nudges) that `apple/Tests` runs too |
+| `app/` | I/O: `paths` (`%LOCALAPPDATA%\NeuralLoop`, an older `%APPDATA%` library moved there once; anywhere but Windows its own development folder, never the Mac app's library; the installed bundle), `store` (each change one read-change-write under one lock, `update`), `keys` (keyring → Windows Credential Manager, service "NeuralLoop"), `runner` (`nl-book.exe --pipeline` installed, `pipeline/nl_book.py` from the repo; output to pipeline.log, `LogFollower`), `library` (the shelf, background loop (each step on its own: one that fails never stops it; auto-resume before the first allowance check), auto-resume, a run claimed in one locked step and never alongside an allowance check, chapter ready, nudges, Recycle Bin removal), `session` (one open book), `server` (`127.0.0.1` with a random token path and Host check, a Content-Security-Policy on every answer (scripts only from the app's files): the window, Pip's assets, a book's media, pictures and PDFs only (never HTML, SVG or data; no dot-file at any level) with byte ranges and containment, PDF pages via pypdfium2, sounds, `/show` for one instance), `api` (pywebview's `js_api`), `moment` (`SHQueryUserNotificationState` incl. Store apps and Focus time, the window in front against every display, microphone in use), `notify` (toasts via windows-toasts, else the tray balloon; a silly nudge without the big Pip plays its mood's sound next to a silent toast, except in Focus time), `tray` (pystray menu) |
+| `ui/` | The window (HTML/CSS/JS, no build step): `app.js` (shelf, welcome, Settings, Pip's panel), `book.js` (the five steps, players with play tracking, reading credit, quiz, remake, mind map, cards, book map), `graph.js` (layout and explorer), `pip.html` + `pip.js` (the big Pip; no inline scripts anywhere: the CSP allows only files), `browser-shim.js` (`?browser=1`: the same API over HTTP for `--browser`) |
+| `main.py` | `NeuralLoop.exe` (the app; `--background` from the Start-up folder: only the tray), `nl-book.exe` (the pipeline; `-m notebooklm|playwright` too), `--browser` (development) |
+| `tests/` | pytest: the Swift tests' cases for every core rule, and the shared cases in `testdata/core` (FSRS, progress merging, the prep window, nudges) that `apple/Tests` runs too; plus the library, server, nudging, and entry points end to end with a practice run |
 
 ### Other
 `scripts/build-runtime.sh` (self-contained runtime: Python 3.12.14, hash-locked wheels from `scripts/runtime-requirements.txt`
