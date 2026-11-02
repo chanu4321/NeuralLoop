@@ -4,7 +4,10 @@
   system when the process ends, even when it's killed, so a left-over `.running` file never blocks.
 - Children that must outlive a stop, or be stopped together with everything they start: a new session on
   POSIX, a new process group on Windows (and never a console window popping up from the windowless app).
-- Ending a process tree: SIGTERM then SIGKILL to the group on POSIX; `taskkill /T`, then `/F`, on Windows.
+- Ending a process tree: SIGTERM then SIGKILL to the group on POSIX; `taskkill /T`, then `/F`, on Windows
+  (System32's own taskkill, by its full path).
+- Programs NeuralLoop may run: never a `.cmd` or `.bat` launcher on Windows (cmd.exe reads their arguments
+  again).
 - How much memory the machine has (to pick a local model that fits).
 - Where the person's NeuralLoop folder is, and whether Google Chrome is installed (for Google sign-in).
 """
@@ -96,7 +99,10 @@ def replace(
 ) -> None:
     """`os.replace`, waiting out a moment when another process has the target open: Windows refuses to
     replace an open file (the app reading book.json while the pipeline writes it), and the reader lets go
-    within a moment. After about two seconds the error stands."""
+    within a moment. After about two seconds the error stands. Elsewhere a permission error is a real one."""
+    if not WINDOWS:
+        os.replace(source, target)
+        return
     for attempt in range(tries):
         try:
             os.replace(source, target)
@@ -105,6 +111,17 @@ def replace(
             if attempt == tries - 1:
                 raise
             time.sleep(wait)
+
+
+def is_script_launcher(path: str | os.PathLike) -> bool:
+    """Whether running `path` would go through cmd.exe, which parses its arguments again by its own rules
+    (a `.cmd` or `.bat` file, the kind npm puts on PATH). NeuralLoop never runs one."""
+    return WINDOWS and Path(path).suffix.lower() in (".cmd", ".bat")
+
+
+def taskkill() -> str:
+    """Windows' own taskkill, by its full path: never whatever a `taskkill` on PATH might be."""
+    return str(Path(os.environ.get("SYSTEMROOT") or r"C:\Windows") / "System32" / "taskkill.exe")
 
 
 def no_window() -> dict:
@@ -119,11 +136,43 @@ def own_group() -> dict:
     return {"start_new_session": True}
 
 
+# Started by PowerShell, which exits at once: the program is left with no living parent, so ending the run's
+# tree (taskkill /T follows parent ids) never reaches it. Program and arguments come from the environment.
+_DETACH = (
+    "Start-Process -WindowStyle Hidden -FilePath $env:NEURALLOOP_DETACHED_PROGRAM "
+    "-ArgumentList $env:NEURALLOOP_DETACHED_ARGUMENTS"
+)
+
+
+def spawn_detached(argv: list[str], env: dict[str, str]) -> None:
+    """Start a program that keeps running after this one stops, and after the run is stopped (Ollama)."""
+    if not WINDOWS:
+        subprocess.Popen(
+            argv, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
+        )
+        return
+    powershell = Path(os.environ.get("SYSTEMROOT") or r"C:\Windows") / "System32" / "WindowsPowerShell"
+    launcher = subprocess.Popen(
+        [str(powershell / "v1.0" / "powershell.exe"), "-NoProfile", "-NonInteractive", "-Command", _DETACH],
+        env={
+            **env,
+            "NEURALLOOP_DETACHED_PROGRAM": argv[0],
+            "NEURALLOOP_DETACHED_ARGUMENTS": " ".join(argv[1:]),  # fixed words ("serve"), never text
+        },
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=CREATE_NO_WINDOW,
+    )
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        launcher.wait(30)
+
+
 def end_tree(process: subprocess.Popen, wait: float = 5) -> None:
     """End a process and everything it started: politely, then for good after `wait` seconds."""
     if WINDOWS:
         for force in (False, True):
-            argv = ["taskkill", "/T", *(["/F"] if force else []), "/PID", str(process.pid)]
+            argv = [taskkill(), "/T", *(["/F"] if force else []), "/PID", str(process.pid)]
             with contextlib.suppress(OSError):
                 subprocess.run(argv, capture_output=True, **no_window())
             try:
@@ -176,14 +225,15 @@ def total_memory() -> int:
 def app_data(env: dict | None = None) -> Path:
     """The person's NeuralLoop folder (books, ai.json, browsers): the same one the app uses.
 
-    macOS `~/Library/Application Support/app.neuralloop.books`, Windows `%APPDATA%\\NeuralLoop`, Linux
-    `$XDG_DATA_HOME/app.neuralloop.books` (`~/.local/share/…`).
+    macOS `~/Library/Application Support/app.neuralloop.books`, Windows `%LOCALAPPDATA%\\NeuralLoop` (books
+    and media get big: never in the roaming profile), Linux `$XDG_DATA_HOME/app.neuralloop.books`
+    (`~/.local/share/…`).
     """
     env = os.environ if env is None else env
     if env.get("NEURALLOOP_HOME"):  # the app's own override (tests, a second library)
         return Path(env["NEURALLOOP_HOME"])
     if WINDOWS:
-        base = env.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+        base = env.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
         return Path(base) / WINDOWS_APP_FOLDER
     if sys.platform == "darwin":
         return Path.home() / "Library" / "Application Support" / APP_ID

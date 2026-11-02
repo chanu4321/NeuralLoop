@@ -134,6 +134,8 @@ def _book_lock(out: Path):
         except portable.LockBusy:
             handle.close()
             raise BookProblem(ALREADY_RUNNING) from None
+        if portable.WINDOWS:  # nobody can delete an open file there, and its file ids needn't match
+            break
         try:
             same_file = os.stat(path).st_ino == os.fstat(handle.fileno()).st_ino
         except FileNotFoundError:

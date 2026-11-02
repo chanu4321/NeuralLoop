@@ -7,7 +7,6 @@ import asyncio
 import json
 import os
 import shutil
-import subprocess
 import urllib.request
 from collections.abc import Callable, Iterator
 
@@ -41,9 +40,7 @@ def _ollama_up(host: str) -> bool:
 
 
 def _spawn(argv: list[str], env: dict) -> None:
-    subprocess.Popen(
-        argv, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **portable.own_group()
-    )
+    portable.spawn_detached(argv, env)  # stopping a run never stops Ollama
 
 
 async def ensure_ollama(host: str, log: Callable[[str], None], wait: float = 0.5, attempts: int = 60) -> None:

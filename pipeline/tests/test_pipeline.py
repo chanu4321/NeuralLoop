@@ -269,6 +269,25 @@ def test_a_second_run_started_during_the_first_stops(options):
     assert not (options.out / ".running").exists()
 
 
+def test_the_lock_never_loops_on_windows_where_file_ids_may_not_match(options, monkeypatch):
+    """Windows can't delete a file someone has open, and its file ids from stat and fstat can differ."""
+    import os
+
+    from neuralloop_books import pipeline, portable
+
+    options.out.mkdir(parents=True)
+    monkeypatch.setattr(portable, "WINDOWS", True)
+    monkeypatch.setattr(portable, "try_lock", lambda handle: None)
+    monkeypatch.setattr(portable, "unlock", lambda handle: None)
+    real_stat = os.stat
+    monkeypatch.setattr(
+        pipeline.os, "stat", lambda path, *a, **k: os.stat_result((0, 1, 0, 0, 0, 0, 0, 0, 0, 0))
+        if str(path).endswith(".running") else real_stat(path, *a, **k)
+    )  # fmt: skip
+    with pipeline._book_lock(options.out):
+        pass
+
+
 def test_a_left_over_lock_file_whose_process_id_was_reused_does_not_block(options):
     """After a crash (even SIGKILL) nothing holds the lock, whatever process now has that id."""
     import os

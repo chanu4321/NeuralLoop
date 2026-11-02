@@ -119,9 +119,11 @@ def test_end_tree_on_windows_asks_taskkill_politely_then_firmly(monkeypatch):
                 raise subprocess.TimeoutExpired("x", timeout)
             return 0
 
+    monkeypatch.setenv("SYSTEMROOT", r"C:\Windows")
     portable.end_tree(Stubborn(), wait=0)
-    assert ran[0] == ["taskkill", "/T", "/PID", "4242"]
-    assert ran[1] == ["taskkill", "/T", "/F", "/PID", "4242"]
+    taskkill = str(Path(r"C:\Windows") / "System32" / "taskkill.exe")  # never one found on PATH
+    assert ran[0] == [taskkill, "/T", "/PID", "4242"]
+    assert ran[1] == [taskkill, "/T", "/F", "/PID", "4242"]
 
 
 def test_end_tree_on_posix_ends_the_group():
@@ -140,10 +142,13 @@ def test_windows_memory_comes_from_the_kernel(monkeypatch):
     assert portable.total_memory() == 16 * 1024**3
 
 
-def test_windows_app_data_is_under_appdata(monkeypatch):
+def test_windows_app_data_is_under_local_appdata(monkeypatch):
+    """Books and media get big: they belong in the local folder, never the roaming profile."""
     monkeypatch.setattr(portable, "WINDOWS", True)
-    folder = portable.app_data({"APPDATA": "C:/Users/pip/AppData/Roaming"})
-    assert folder.parts[-1] == "NeuralLoop" and "Roaming" in folder.parts
+    folder = portable.app_data(
+        {"APPDATA": "C:/Users/pip/AppData/Roaming", "LOCALAPPDATA": "C:/Users/pip/AppData/Local"}
+    )
+    assert folder.parts[-1] == "NeuralLoop" and "Local" in folder.parts
 
 
 def test_windows_chrome_is_looked_for_in_program_files(monkeypatch):
@@ -163,6 +168,7 @@ def test_the_apps_home_override_wins_everywhere(monkeypatch):
 
 def test_replace_waits_out_a_reader_on_windows(tmp_path, monkeypatch):
     """Windows refuses to replace a file someone has open; the reader lets go in a moment."""
+    monkeypatch.setattr(portable, "WINDOWS", True)
     source, target = tmp_path / "a.tmp", tmp_path / "a.json"
     source.write_text("new")
     target.write_text("old")
@@ -182,6 +188,8 @@ def test_replace_waits_out_a_reader_on_windows(tmp_path, monkeypatch):
 
 
 def test_replace_gives_up_on_a_file_that_stays_locked(tmp_path, monkeypatch):
+    monkeypatch.setattr(portable, "WINDOWS", True)
+
     def always_busy(a, b):
         raise PermissionError(13, "Access is denied")
 
@@ -189,3 +197,68 @@ def test_replace_gives_up_on_a_file_that_stays_locked(tmp_path, monkeypatch):
     monkeypatch.setattr(portable.time, "sleep", lambda s: None)
     with pytest.raises(PermissionError):
         portable.replace(tmp_path / "a", tmp_path / "b")
+
+
+def test_replace_never_retries_off_windows(tmp_path, monkeypatch):
+    """On a Mac or Linux a permission error is a real one: it fails at once."""
+    monkeypatch.setattr(portable, "WINDOWS", False)
+    tries = []
+
+    def refused(a, b):
+        tries.append(1)
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(portable.os, "replace", refused)
+    monkeypatch.setattr(portable.time, "sleep", lambda s: pytest.fail("waited"))
+    with pytest.raises(PermissionError):
+        portable.replace(tmp_path / "a", tmp_path / "b")
+    assert tries == [1]
+
+
+@pytest.mark.parametrize("name", ["opencode.cmd", "HERMES.BAT", "tool.Cmd"])
+def test_windows_refuses_script_launchers(monkeypatch, name):
+    """cmd.exe reads a .cmd or .bat file's arguments again, by its own rules: never run one with ours."""
+    monkeypatch.setattr(portable, "WINDOWS", True)
+    assert portable.is_script_launcher(f"C:/tools/{name}")
+    monkeypatch.setattr(portable, "WINDOWS", False)
+    assert not portable.is_script_launcher(f"/usr/bin/{name}")
+
+
+def test_windows_programs_are_fine(monkeypatch):
+    monkeypatch.setattr(portable, "WINDOWS", True)
+    assert not portable.is_script_launcher("C:/tools/opencode.exe")
+    assert not portable.is_script_launcher("C:/tools/hermes")
+
+
+def test_a_detached_program_outlives_the_run_on_posix(monkeypatch):
+    monkeypatch.setattr(portable, "WINDOWS", False)
+    seen = []
+    monkeypatch.setattr(portable.subprocess, "Popen", lambda argv, **kw: seen.append((argv, kw)))
+    portable.spawn_detached(["/usr/bin/ollama", "serve"], {"PATH": "/usr/bin"})
+    argv, kwargs = seen[0]
+    assert argv == ["/usr/bin/ollama", "serve"] and kwargs["start_new_session"] is True
+    assert kwargs["env"] == {"PATH": "/usr/bin"}
+
+
+def test_a_detached_program_on_windows_is_never_part_of_the_runs_tree(monkeypatch):
+    """Stopping a run ends its whole tree (taskkill /T follows parents): Ollama is started by a PowerShell
+    that exits at once, so it has no living parent in the run's tree. Its path rides in the environment,
+    never on a command line."""
+    monkeypatch.setattr(portable, "WINDOWS", True)
+    monkeypatch.setenv("SYSTEMROOT", r"C:\Windows")
+    seen = []
+
+    class Done:
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(portable.subprocess, "Popen", lambda argv, **kw: seen.append((argv, kw)) or Done())
+    program = r"C:\Users\pip\AppData\Local\Programs\Ollama\ollama.exe"
+    portable.spawn_detached([program, "serve"], {"SYSTEMROOT": r"C:\Windows"})
+    argv, kwargs = seen[0]
+    assert argv[0] == str(Path(r"C:\Windows") / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe")
+    assert program not in " ".join(argv) and "Start-Process" in argv[-1]
+    assert kwargs["env"]["NEURALLOOP_DETACHED_PROGRAM"] == program
+    assert kwargs["env"]["NEURALLOOP_DETACHED_ARGUMENTS"] == "serve"
+    assert kwargs["env"]["SYSTEMROOT"] == r"C:\Windows"
+    assert kwargs["creationflags"] & portable.CREATE_NO_WINDOW
