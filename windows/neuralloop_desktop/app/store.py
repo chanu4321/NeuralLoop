@@ -1,19 +1,23 @@
 """Small JSON files the app keeps for itself (settings.json, runs.json), written atomically and read
-leniently."""
+leniently. Every change is one read, change and write under one lock (`update`), so two threads never lose
+each other's changes (a "chapter ready" announced twice, a silly nudge played again)."""
 
 import contextlib
 import json
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from neuralloop_books import portable
+
+T = TypeVar("T")
 
 
 class JsonFile:
     def __init__(self, path: Path):
         self.path = path
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def read(self) -> dict:
         try:
@@ -32,11 +36,16 @@ class JsonFile:
     def get(self, key: str, default: Any = None) -> Any:
         return self.read().get(key, default)
 
-    def set(self, key: str, value: Any) -> None:
+    def update(self, change: Callable[[dict], T]) -> T:
+        """Read, `change` the data in place, and write it back, all under the file's lock."""
         with self._lock:
             data = self.read()
-        data[key] = value
-        self.write(data)
+            result = change(data)
+            self.write(data)
+            return result
+
+    def set(self, key: str, value: Any) -> None:
+        self.update(lambda data: data.__setitem__(key, value))
 
     def remove(self) -> None:
         with contextlib.suppress(OSError):

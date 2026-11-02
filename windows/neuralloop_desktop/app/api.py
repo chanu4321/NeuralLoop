@@ -203,7 +203,9 @@ class Api:
                 "needs": needs,
                 "done": coverage.reading_progress(session.progress["reading"].get(str(n)), needs),
             }
-        pdf = session.folder / read["file"]
+        pdf = books_file_in(session.folder, read.get("file"))  # like every other path: inside the book
+        if not pdf:
+            return None
         words = pdf_words(pdf)
         needs = [coverage.needed(w) for w in words]
         return {
@@ -462,15 +464,15 @@ class Api:
         }
 
     def save_nudges(self, changes: dict) -> dict:
-        merged = {**self._library.nudge_settings(), **(changes or {})}
-        self._library.settings.set("nudgeSettings", nudges.parse_settings(merged))
+        self._library.change_nudge_settings(lambda settings: settings.update(changes or {}))
         return self.nudge_settings()
 
     def add_silly_step(self, sound: str) -> dict:
-        settings = self._library.nudge_settings()
-        if sound in nudges.SILLY_SOUNDS and len(settings["steps"]) < nudges.MOST_STEPS:
-            settings["steps"].append(nudges.step(sound, nudges.free_hours(settings["steps"])))
-            self._library.settings.set("nudgeSettings", settings)
+        def add(settings: dict) -> None:
+            if sound in nudges.SILLY_SOUNDS and len(settings["steps"]) < nudges.MOST_STEPS:
+                settings["steps"].append(nudges.step(sound, nudges.free_hours(settings["steps"])))
+
+        self._library.change_nudge_settings(add)
         return self.nudge_settings()
 
     def test_nudge(self, mood: str) -> None:

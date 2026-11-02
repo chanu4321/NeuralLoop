@@ -10,6 +10,7 @@ import json
 import shutil
 import threading
 import time
+import traceback
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -119,6 +120,11 @@ class Library:
         self._shelf_json: str = ""
         self._stop = threading.Event()
         self._refresh_lock = threading.Lock()
+        self._announce_lock = threading.Lock()  # one "chapter ready" pass at a time: never announced twice
+        self._nudge_lock = threading.Lock()  # one nudge decision at a time: a silly step never plays twice
+        # A NotebookLM allowance check and a run's start never overlap: each NotebookLM command rotates
+        # Google's session cookie, and two at once can sign the saved session out.
+        self._notebooklm = threading.Lock()
 
     # The background loop.
 
@@ -129,18 +135,26 @@ class Library:
         self._stop.set()
 
     def _loop(self) -> None:
-        self.refresh()
-        self.refresh_usage(force=True)
-        self.resume_unfinished()
+        self._first_look()
         ticks = 0
         while not self._stop.wait(4):
-            with contextlib.suppress(Exception):  # one bad look never stops the shelf
-                self.refresh()
             ticks += 1
-            if ticks % 75 == 0:  # every ~5 minutes: usage, retries whose limit lifted, maybe a gentle nudge
-                threading.Thread(target=self.refresh_usage, daemon=True).start()
-                self.resume_unfinished()
-                self.nudge_tick()
+            self._tick(ticks)
+
+    def _first_look(self) -> None:
+        """At launch: the shelf, then unfinished books (before the allowance check, which waits for runs)."""
+        _safely(self.refresh)
+        _safely(self.resume_unfinished)
+        _safely(lambda: self.refresh_usage(force=True))
+
+    def _tick(self, ticks: int) -> None:
+        """Every 4 s the shelf; every ~5 minutes usage, retries whose limit lifted, maybe a gentle nudge. Each
+        step on its own: one that fails never stops the others, or the loop."""
+        _safely(self.refresh)
+        if ticks % 75 == 0:
+            threading.Thread(target=lambda: _safely(self.refresh_usage), daemon=True).start()
+            _safely(self.resume_unfinished)
+            _safely(self.nudge_tick)
 
     def refresh_usage(self, force: bool = False) -> dict | None:
         """NotebookLM's allowance, read at most every five minutes (or now, when `force`: the account page, a
@@ -148,13 +162,16 @@ class Library:
         Google's session cookie, and one alongside a run can leave the saved session signed out."""
         if not force and time.time() - self.usage_checked < 300:
             return self.usage
-        if any(e["preparing"] for e in self.entries()):
-            return self.usage
-        self.usage_checked = time.time()
-        _, lines = runner.once(["--usage"], timeout=60)
-        for line in lines:
-            if parsed := prep.parse_usage(line):
-                self.usage = parsed
+        with self._notebooklm:  # a run's start waits for this check
+            with self.lock:
+                claimed = bool(self.state.runs)
+            if claimed or any(e["preparing"] for e in self.entries()):
+                return self.usage
+            self.usage_checked = time.time()
+            _, lines = runner.once(["--usage"], timeout=60)
+            for line in lines:
+                if parsed := prep.parse_usage(line):
+                    self.usage = parsed
         with contextlib.suppress(Exception):  # the window shows it next time it asks
             self.emit("shelf", self.shelf())
         return self.usage
@@ -372,6 +389,10 @@ class Library:
         return nudges.parse_settings(self.settings.get("nudgeSettings"))
 
     def announce(self) -> None:
+        with self._announce_lock:
+            self._announce()
+
+    def _announce(self) -> None:
         settings = self.nudge_settings()
         with self.lock:
             scanned = list(self.scanned.values())
@@ -409,6 +430,10 @@ class Library:
     # Pip's nudges (Nudger).
 
     def nudge_tick(self) -> None:
+        with self._nudge_lock:
+            self._nudge_tick()
+
+    def _nudge_tick(self) -> None:
         books_now = [(e["book"], e["progress"]) for e in self.entries() if e["book"]]
         now = dt.datetime.now()
         today = now.strftime("%Y-%m-%d")
@@ -428,20 +453,37 @@ class Library:
     def send_nudge(self, chosen: dict, day: str | None = None, test: bool = False) -> None:
         now = now_ms()
         if not test:
-            history = nudges.parse_history(self.settings.get("nudgeHistory"))
-            nudges.sent(history, chosen, now, day or study.day_key(now))
-            self.settings.set("nudgeHistory", history)
+            self._change_history(lambda history: nudges.sent(history, chosen, now, day or study.day_key(now)))
         self.notify(title=chosen["title"], body=chosen["body"], book_id="", nudge=chosen, test=test)
 
+    def _change_history(self, change: Callable[[dict], object]) -> None:
+        def apply(data: dict) -> None:
+            history = nudges.parse_history(data.get("nudgeHistory"))
+            change(history)
+            data["nudgeHistory"] = history
+
+        self.settings.update(apply)
+
     def engaged(self) -> None:
-        history = nudges.parse_history(self.settings.get("nudgeHistory"))
-        nudges.engaged(history, now_ms())
-        self.settings.set("nudgeHistory", history)
+        self._change_history(lambda history: nudges.engaged(history, now_ms()))
+
+    def change_nudge_settings(self, change: Callable[[dict], object]) -> dict:
+        """Read, change and save the nudge settings in one step (two changes at once never undo each
+        other)."""
+
+        def apply(data: dict) -> dict:
+            settings = nudges.parse_settings(data.get("nudgeSettings"))
+            change(settings)
+            data["nudgeSettings"] = nudges.parse_settings(settings)
+            return data["nudgeSettings"]
+
+        return self.settings.update(apply)
 
     def pause_until_tomorrow(self) -> None:
-        settings = self.nudge_settings()
-        settings["pausedUntil"] = nudges.pause_until_tomorrow(dt.datetime.now(), settings["quietEnd"])
-        self.settings.set("nudgeSettings", settings)
+        def pause(settings: dict) -> None:
+            settings["pausedUntil"] = nudges.pause_until_tomorrow(dt.datetime.now(), settings["quietEnd"])
+
+        self.change_nudge_settings(pause)
 
     # Adding and preparing books.
 
@@ -613,7 +655,10 @@ class Library:
             title=title,
         )
         run = runner.Run()
-        with self.lock:
+        # Free and claimed in one step (two starts never make two runs), never alongside an allowance check.
+        with self._notebooklm, self.lock:
+            if book_id in self.state.runs:
+                return
             self.state.runs[book_id] = run
             self.state.ran_with[book_id] = win
             self.state.problems.pop(book_id, None)
@@ -659,9 +704,11 @@ class Library:
             self.refresh()
             return
         if not any("already being prepared" in t for t in tail):
-            records = self.records.read()
-            records[book_id] = prep.record_after(records.get(book_id), code, now_ms())
-            self.records.write(records)
+            self.records.update(
+                lambda records: records.__setitem__(
+                    book_id, prep.record_after(records.get(book_id), code, now_ms())
+                )
+            )
         item = self.scanned.get(book_id)
         title = item.book["title"] if item and item.book else "Your book"
         said = outcome(title, code, tail)
@@ -731,6 +778,14 @@ class Library:
         threading.Thread(target=self.resume_unfinished, daemon=True).start()
 
 
+def _safely(step: Callable[[], object]) -> None:
+    """One background step; whatever goes wrong in it, the loop carries on (and tries again next time)."""
+    try:
+        step()
+    except Exception:  # a bad book, a file mid-write, a pipeline that won't start: never the end of the loop
+        traceback.print_exc()
+
+
 def stop_run_elsewhere(folder: Path) -> None:
     """A run this app didn't start (the command line, or before a relaunch): its pid is in `.running`, trusted
     only while that run holds the lock."""
@@ -747,7 +802,7 @@ def stop_run_elsewhere(folder: Path) -> None:
 
     if portable.WINDOWS:
         subprocess.run(
-            ["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True, **portable.no_window()
+            [portable.taskkill(), "/T", "/F", "/PID", str(pid)], capture_output=True, **portable.no_window()
         )
     else:
         import os
