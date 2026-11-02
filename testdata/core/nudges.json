@@ -1,0 +1,225 @@
+{
+  "about": "Whether Pip nudges now, and with what: `books` pairs book.json with this device's progress.json; `settings` and `history` are as saved (settings.json's nudgeSettings and nudgeHistory); `hour` is the local hour at `now`. `expect` is null (no nudge) or the nudge's title, body and mood.",
+  "cases": [
+   {
+    "name": "cards due: a gentle nudge",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759992800000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "🐾 4 cards are ready", "body": "About 1 min with Pip, then you're done for today.", "mood": "gentle"}
+   },
+   {
+    "name": "only two cards due: nothing",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759992800000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "a chapter left halfway for half a day",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"loop": {"2": {"prime": 1759913600000, "read": 1759917200000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759992800000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "🧶 Loose yarn in “Chapter 2”", "body": "Next: recall it in your own words. Pip saved your spot.", "mood": "gentle"}
+   },
+   {
+    "name": "a halfway chapter whose podcast isn't made yet: nothing",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "todo", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"loop": {"2": {"prime": 1759913600000, "read": 1759917200000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759992800000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "quiet hours",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759992800000},
+    "now": 1760000000000,
+    "hour": 23,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "paused until tomorrow",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "pausedUntil": 1760003600000},
+    "history": {"lastEngaged": 1759992800000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "one a day",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759992800000, "lastSent": 1759996400000, "lastSentDay": "2025-10-09"},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "ignored twice: every other day",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "sillySounds": false},
+    "history": {"lastEngaged": 1759740800000, "lastSent": 1759913600000, "lastSentDay": "2025-10-08", "ignoredInARow": 2},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "ignored twice, two days on: a nudge again",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "sillySounds": false},
+    "history": {"lastEngaged": 1759654400000, "lastSent": 1759823600000, "lastSentDay": "2025-10-07", "ignoredInARow": 2},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "🐾 4 cards are ready", "body": "About 1 min with Pip, then you're done for today.", "mood": "gentle"}
+   },
+   {
+    "name": "away over a week: weekly only",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "sillySounds": false},
+    "history": {"lastEngaged": 1759222400000, "lastSent": 1759740800000, "lastSentDay": "2025-10-06"},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "away nine hours: the sad violin, with what's ready",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759967600000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "🎻 Pip is playing a tiny sad violin", "body": "4 cards are ready. About 1 min with Pip, then you're done for today.", "mood": "sadViolin"}
+   },
+   {
+    "name": "away thirteen hours after the violin: the sad meow",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759953200000, "lastSillySent": 1759985600000, "lastStepId": "6f1c2d9a-0000-4000-8000-000000000001", "lastMood": "sadViolin"},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "😿 Pip wrote you a sad little song", "body": "4 cards are ready. About 1 min with Pip, then you're done for today.", "mood": "sadMeow"}
+   },
+   {
+    "name": "away 30 hours: the fahhh",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"loop": {"2": {"prime": 1759913600000, "read": 1759917200000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759892000000, "lastSillySent": 1759938800000, "lastStepId": "6f1c2d9a-0000-4000-8000-000000000002", "lastMood": "sadMeow"},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "😱 FAHHH! A whole day?!", "body": "Loose yarn in “Chapter 2”. Next: recall it in your own words. Pip saved your spot.", "mood": "shocked"}
+   },
+   {
+    "name": "the last step went out: no repeat by default",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759820000000, "lastSillySent": 1759928000000, "lastStepId": "6f1c2d9a-0000-4000-8000-000000000003", "lastMood": "shocked", "lastSentDay": "2025-10-09", "lastSent": 1759996400000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "the last step repeats when asked",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "repeatHours": 6},
+    "history": {"lastEngaged": 1759820000000, "lastSillySent": 1759974800000, "lastStepId": "6f1c2d9a-0000-4000-8000-000000000003", "lastMood": "shocked", "lastSentDay": "2025-10-09", "lastSent": 1759996400000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "😱 FAHHH! 2 days?!", "body": "4 cards are ready. About 1 min with Pip, then you're done for today.", "mood": "shocked"}
+   },
+   {
+    "name": "nothing to do: Pip's ready when you are, once a week",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759967600000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "🎻 Pip is playing a tiny sad violin", "body": "Pip's ready when you are. Even five minutes counts.", "mood": "sadViolin"}
+   },
+   {
+    "name": "nothing to do and said hi this week: nothing",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759967600000, "lastMissedYou": 1759740800000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   },
+   {
+    "name": "NeuralLoop in front: nothing silly",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}]},
+    "history": {"lastEngaged": 1759967600000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": true,
+    "expect": {"title": "🐾 4 cards are ready", "body": "About 1 min with Pip, then you're done for today.", "mood": "gentle"}
+   },
+   {
+    "name": "silly mode off",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "sillySounds": false},
+    "history": {"lastEngaged": 1759967600000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": {"title": "🐾 4 cards are ready", "body": "About 1 min with Pip, then you're done for today.", "mood": "gentle"}
+   },
+   {
+    "name": "everything off",
+    "books": [{"book": {"title": "B", "chapters": [{"n": 1, "title": "Chapter 1", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 2, "title": "Chapter 2", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}, {"n": 3, "title": "Chapter 3", "status": {"study": "done", "graph": "done", "quiz": "done", "cards": "done", "mindmap": "done", "audio": "done", "video": "done"}}]}, "progress": {"cards": {"1:0": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:1": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:2": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}, "1:3": {"s": 3, "d": 5, "reps": 1, "last": 1759568000000, "due": 1759913600000}}}}],
+    "settings": {"steps": [{"id": "6f1c2d9a-0000-4000-8000-000000000001", "sound": "sadViolin", "hours": 8}, {"id": "6f1c2d9a-0000-4000-8000-000000000002", "sound": "sadMeow", "hours": 12}, {"id": "6f1c2d9a-0000-4000-8000-000000000003", "sound": "shocked", "hours": 24}], "enabled": false},
+    "history": {"lastEngaged": 1759967600000},
+    "now": 1760000000000,
+    "hour": 14,
+    "today": "2025-10-09",
+    "appActive": false,
+    "expect": null
+   }
+  ]
+}
