@@ -137,3 +137,25 @@ def test_real_espeak_gives_kokoros_phonemes():
     said = espeak.phonemize("Hello there! So, today we're talking about hash maps.")
     assert said == "həlˈoʊ ðˈɛɹ! sˈoʊ, tədˈeɪ wɪɹ tˈɔːkɪŋ ɐbˌaʊt hˈæʃ mˈæps."
     assert espeak.phonemize("Okay.   Let's   go.") == "oʊkˈeɪ. lˈɛts ɡˈoʊ."
+
+
+def test_espeak_crashing_fails_the_item_not_the_setup(monkeypatch):
+    """Only a missing espeak-ng is something to set up; a crash or a hang fails just that podcast or video."""
+    import subprocess
+
+    monkeypatch.setattr(espeak, "require", lambda env=None: ("espeak-ng", None))
+
+    def crashed(*args, **kwargs):
+        return subprocess.CompletedProcess(args, 3221225477, b"", b"access violation")
+
+    monkeypatch.setattr(espeak.subprocess, "run", crashed)
+    with pytest.raises(espeak.EspeakFailed) as error:
+        espeak.runner()("hello\n")
+    assert not isinstance(error.value, SetupError)
+
+    def hung(*args, **kwargs):
+        raise subprocess.TimeoutExpired("espeak-ng", 60)
+
+    monkeypatch.setattr(espeak.subprocess, "run", hung)
+    with pytest.raises(espeak.EspeakFailed):
+        espeak.runner()("hello\n")

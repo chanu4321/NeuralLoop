@@ -175,7 +175,7 @@ def _local_engine(opts: Options):
             for host, name, named in dict.fromkeys(_local_models(local)):
                 await _download(setup, host, name, opts.log, any_will_do=not named)
 
-    speech = make_speech(opts.speech, opts.voices, opts.voice_quality)
+    speech = make_speech(opts.speech, opts.voices, opts.voice_quality, opts.language)
     return LocalEngine.from_options(opts, model, speech, task_models, before_start=before_start)
 
 

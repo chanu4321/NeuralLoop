@@ -165,3 +165,71 @@ def test_a_brisk_delivery_speaks_a_little_faster():
     assert kokoro.speed_for("excited, quick pace") > 1.0
     assert kokoro.speed_for("calm, slow and thoughtful") < 1.0
     assert kokoro.speed_for("warm, steady pace") == 1.0
+
+
+def test_code_in_a_book_is_spoken_not_dropped(fake_kokoro, tmp_path, monkeypatch):
+    """Only Rumik's own delivery tags go; `List<String>` and `<T>` are part of what the book says."""
+    monkeypatch.setattr(kokoro, "ready", lambda folder, quality: True)
+    KokoroSpeech(None).synth("A List<String> of <T> <sigh> items", "af_heart", "", tmp_path / "a.wav")
+    assert FakeModel.made[0].said[0][0] == "en-us:A List<String> of <T> items"
+
+
+@pytest.mark.parametrize(
+    ("language", "voices", "espeak_language"),
+    [("es", ("ef_dora", "em_alex"), "es"), ("hi", ("hf_alpha", "hm_omega"), "hi"),
+     ("fr", ("ff_siwis", "ff_siwis"), "fr-fr"), ("en", ("af_heart", "am_michael"), "en-us")],
+)  # fmt: skip
+def test_the_books_language_picks_kokoros_voices_and_espeaks_language(
+    fake_kokoro, tmp_path, monkeypatch, language, voices, espeak_language
+):
+    monkeypatch.setattr(kokoro, "ready", lambda folder, quality: True)
+    voice = KokoroSpeech(("af_heart", "am_michael"), language=language)
+    assert voice.voices == voices
+    voice.check()
+    voice.synth("Hola", voice.voices[0], "", tmp_path / "a.wav")
+    assert FakeModel.made[0].said[0][0] == f"{espeak_language}:Hola"
+
+
+def test_voices_already_in_the_books_language_are_kept(fake_kokoro):
+    assert KokoroSpeech(("em_alex", "ef_dora"), language="es").voices == ("em_alex", "ef_dora")
+
+
+@pytest.mark.parametrize(("language", "name"), [("de", "German"), ("ja", "Japanese")])
+def test_a_language_kokoro_cant_speak_says_so(fake_kokoro, language, name):
+    with pytest.raises(SetupError, match=name) as error:
+        KokoroSpeech(None, language=language).check()
+    assert "NotebookLM" in str(error.value)
+
+
+def test_two_books_downloading_at_once_never_share_a_partial_file(tmp_path, monkeypatch):
+    """Each download writes its own temporary file; the finished file is swapped in whole."""
+    good = b"voices"
+    monkeypatch.setattr(kokoro, "FILES", {"voices-v1.0.bin": (hashlib.sha256(good).hexdigest(), len(good))})
+    partials = []
+
+    class Watching(_Response):
+        def read(self, size=-1):
+            partials.extend(p.name for p in tmp_path.iterdir() if p.name.endswith(".part"))
+            return super().read(size)
+
+    monkeypatch.setattr(kokoro.urllib.request, "urlopen", lambda url, timeout=None: Watching(good))
+    kokoro.download(tmp_path, ["voices-v1.0.bin"], lambda _: None)
+    kokoro.download(tmp_path, ["voices-v1.0.bin"], lambda _: None)  # already there
+    assert partials and all(name != "voices-v1.0.bin.part" for name in partials)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["voices-v1.0.bin"]
+
+
+def test_a_file_another_run_finished_first_is_kept(tmp_path, monkeypatch):
+    good = b"voices"
+    monkeypatch.setattr(kokoro, "FILES", {"voices-v1.0.bin": (hashlib.sha256(good).hexdigest(), len(good))})
+
+    class OtherRunFinishes(_Response):
+        def read(self, size=-1):
+            data = super().read(size)
+            if not data:  # the other book's run swaps its finished copy in while ours is still open
+                (tmp_path / "voices-v1.0.bin").write_bytes(good)
+            return data
+
+    monkeypatch.setattr(kokoro.urllib.request, "urlopen", lambda url, timeout=None: OtherRunFinishes(good))
+    kokoro.download(tmp_path, ["voices-v1.0.bin"], lambda _: None)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["voices-v1.0.bin"]

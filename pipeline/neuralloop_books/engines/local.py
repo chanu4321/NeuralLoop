@@ -13,6 +13,7 @@ from .. import activity, audio, context, convert, portable, prompts
 from ..chapters import chapter_size
 from ..config import CONTEXT_CHARS, audio_length
 from ..notebook import UnusableAnswer
+from ..speech import host_name
 from ..state import TODO, WORKING, BookState
 
 LANGUAGES = {
@@ -247,8 +248,8 @@ class LocalEngine:
                 prompts.PODCAST,
                 chapter,
                 format=style,
-                host_a=self.speech.voices[0],
-                host_b=self.speech.voices[1],
+                host_a=host_name(self.speech.voices[0]),
+                host_b=host_name(self.speech.voices[1]),
             ),
             convert.podcast_script,
             "podcast script",

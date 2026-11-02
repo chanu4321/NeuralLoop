@@ -9,6 +9,7 @@ The model files come from kokoro-onnx's GitHub release and are checked by SHA-25
 import hashlib
 import os
 import re
+import tempfile
 import urllib.request
 import wave
 from collections.abc import Callable
@@ -45,10 +46,20 @@ VOICES = (
 )
 VOICE_IDS = tuple(v for v, _ in VOICES)
 DEFAULT_VOICES = ("af_heart", "am_michael")
+# A book in another language: Kokoro's voices for it (host A, host B; French has one), whose first letter is
+# the language. Kokoro's Japanese and Chinese need a phonemizer other than espeak-ng; it has no German voice.
+LANGUAGE_VOICES = {
+    "es": ("ef_dora", "em_alex"),
+    "fr": ("ff_siwis", "ff_siwis"),
+    "hi": ("hf_alpha", "hm_omega"),
+}
+ESPEAK_LANGUAGES = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi"}
+LANGUAGE_NAMES = {"de": "German", "ja": "Japanese", "zh": "Chinese", "ko": "Korean"}
 # ai.json made on a Mac (and the shared defaults) names Rumik's voices: keep each host's place.
 RUMIK_NAMES = {"Ira": "af_heart", "Aisha": "af_bella", "Siya": "af_nicole", "Zoya": "am_michael"}
 
-_TAGS = re.compile(r"\s*<\s*/?\s*[A-Za-z]+\s*/?\s*>\s*")  # Rumik's <laugh>, <chuckle>, <sigh>
+# Rumik's own delivery tags, and only those: `List<String>` and `<T>` in a book are part of what it says.
+_TAGS = re.compile(r"\s*<\s*/?\s*(?:laugh|chuckle|sigh)\s*/?\s*>\s*", re.IGNORECASE)
 
 
 def folder() -> Path:
@@ -93,7 +104,10 @@ def download(where: Path, names: list[str], progress: Callable[[float], None]) -
     got = 0
     for name in todo:
         expected = FILES[name][0]
-        partial = where / f"{name}.part"
+        # Its own temporary file: two books' runs may download at once, and neither may see the other's half.
+        handle, partial_name = tempfile.mkstemp(prefix=f"{name}.", suffix=".part", dir=where)
+        os.close(handle)
+        partial = Path(partial_name)
         digest = hashlib.sha256()
         try:
             with urllib.request.urlopen(RELEASE + name, timeout=60) as response, open(partial, "wb") as out:
@@ -110,7 +124,11 @@ def download(where: Path, names: list[str], progress: Callable[[float], None]) -
         if digest.hexdigest() != expected:
             partial.unlink(missing_ok=True)
             raise SetupError(f"The downloaded {name} didn't match the expected file. Try again later.")
-        partial.replace(where / name)
+        target = where / name
+        if target.is_file() and target.stat().st_size == FILES[name][1] and _sha256(target) == expected:
+            partial.unlink(missing_ok=True)  # another run finished first (and may already be using it)
+        else:
+            portable.replace(partial, target)
     progress(1.0)
 
 
@@ -129,20 +147,37 @@ def _voice(name: str) -> str:
 
 
 def language(voice: str) -> str:
-    """Kokoro's British voices (bf_, bm_) were made with British pronunciations, the rest with American."""
-    return "en-gb" if voice[:1] == "b" else "en-us"
+    """espeak-ng's language for a voice, from its first letter: Kokoro's British voices (bf_, bm_) were made
+    with British pronunciations, its American ones (af_, am_) with American, its Spanish ones in Spanish…"""
+    return ESPEAK_LANGUAGES.get(voice[:1], "en-us")
+
+
+def _voices_for(chosen: tuple[str, ...] | None, book_language: str) -> tuple[str, str]:
+    voices = tuple(_voice(v) for v in chosen) if chosen else DEFAULT_VOICES
+    wanted = LANGUAGE_VOICES.get(book_language)
+    if wanted and any(v[:1] != wanted[0][:1] for v in voices):  # English voices can't read Spanish well
+        return wanted
+    return voices
 
 
 class KokoroSpeech:
     name = "Kokoro"
 
-    def __init__(self, voices: tuple[str, str] | None, quality: str = "fast"):
-        self.voices = tuple(_voice(v) for v in voices) if voices else DEFAULT_VOICES
+    def __init__(self, voices: tuple[str, str] | None, quality: str = "fast", language: str = "en"):
+        self.book_language = (language or "en").split("-")[0].lower()
+        self.voices = _voices_for(voices, self.book_language)
         self.quality = "best" if quality == "best" else "fast"
         self._model = None
 
     def check(self) -> None:
-        unknown = [v for v in self.voices if v not in VOICE_IDS]
+        if self.book_language != "en" and self.book_language not in LANGUAGE_VOICES:
+            spoken = LANGUAGE_NAMES.get(self.book_language, self.book_language)
+            raise SetupError(
+                f"Kokoro can't speak {spoken}, so this PC can't voice podcasts and videos in it. NotebookLM "
+                "can still make them: choose NotebookLM for them in Settings → Your AI."
+            )
+        known = {*VOICE_IDS, *(v for pair in LANGUAGE_VOICES.values() for v in pair)}
+        unknown = [v for v in self.voices if v not in known]
         if unknown:
             raise SetupError(
                 f"Kokoro's voices include {', '.join(VOICE_IDS[:4])}…; {', '.join(unknown)} isn't one."

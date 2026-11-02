@@ -59,6 +59,10 @@ def program(env: dict | None = None) -> tuple[str, Path | None] | None:
     return (found, None) if found else None
 
 
+class EspeakFailed(RuntimeError):
+    """espeak-ng crashed or hung on some text: that podcast or video fails, nothing needs setting up."""
+
+
 def require(env: dict | None = None) -> tuple[str, Path | None]:
     found = program(env)
     if found:
@@ -88,10 +92,10 @@ def runner(lang: str = "en-us") -> Runner:
                 argv, input=text.encode("utf-8"), capture_output=True, timeout=TIMEOUT, **portable.no_window()
             )
         except (OSError, subprocess.TimeoutExpired) as error:
-            raise SetupError(f"espeak-ng didn't run ({error}).") from None
+            raise EspeakFailed(f"espeak-ng didn't run ({error}).") from None
         if done.returncode != 0:
             problem = done.stderr.decode("utf-8", "replace").strip().splitlines()[-1:] or ["no message"]
-            raise SetupError(f"espeak-ng stopped (exit {done.returncode}: {problem[0]}).")
+            raise EspeakFailed(f"espeak-ng stopped (exit {done.returncode}: {problem[0]}).")
         return done.stdout.decode("utf-8", "replace")
 
     return run

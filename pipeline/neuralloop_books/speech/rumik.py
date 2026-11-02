@@ -43,7 +43,11 @@ class RumikSpeech:
                 f"Rumik's voices are {', '.join(VOICES)}; {', '.join(unknown)} isn't one of them."
             )
         if platform.system() != "Darwin" or platform.machine() != "arm64":
-            raise SetupError("Rumik voices need a Mac with Apple silicon (M1 or newer).")
+            raise SetupError(
+                "Voices made on a Mac need Apple silicon (M1 or newer), so this Mac can't voice podcasts "
+                "and videos itself. NotebookLM can still make them: choose NotebookLM for them in "
+                "Settings → Your AI."
+            )
         try:
             import mlx_audio  # noqa: F401
         except ImportError as error:
