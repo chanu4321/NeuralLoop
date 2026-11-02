@@ -59,7 +59,7 @@ make mac        # build and open the Mac app (needs Xcode and XcodeGen: brew ins
 make package    # dist/NeuralLoop-<version>.dmg with the runtime inside (unsigned: "Open Anyway" once)
 make runtime    # just the self-contained runtime (build/runtime)
 make pip        # regenerate Pip's artwork
-make windows    # on Windows: dist/NeuralLoop-<version>-setup.exe and a zip (windows/build.py)
+make windows    # on Windows: dist/NeuralLoop-<version>-Setup.exe and a zip (windows/build.py)
 make windows-dev  # the Windows app's window in a browser, on any OS
 python pipeline/nl_book.py --dry-run --out /tmp/demo   # whole pipeline offline with a practice model and voices
 ```

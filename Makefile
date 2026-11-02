@@ -58,7 +58,7 @@ mac:              ## build and open the SwiftUI Mac app (needs Xcode and XcodeGe
 		-derivedDataPath build/dd CODE_SIGN_IDENTITY="NeuralLoop Development" build -quiet
 	open apple/build/dd/Build/Products/Debug/NeuralLoop.app
 
-windows:          ## NeuralLoop for Windows (run on Windows): dist/NeuralLoop-<version>-setup.exe and a zip
+windows:          ## NeuralLoop for Windows (run on Windows): dist/NeuralLoop-<version>-Setup.exe and a zip
 	$(PY) windows/build.py
 
 test-windows:     ## the Windows app's tests (needs pip install -r windows/requirements.txt; CI runs them on Windows)

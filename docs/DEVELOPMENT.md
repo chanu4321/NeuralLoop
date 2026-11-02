@@ -59,11 +59,12 @@ Edge WebView2) instead of SwiftUI. It reads and writes the same book folders, `b
 Working on it:
 
 ```bash
-pip install -r windows/requirements.txt   # on Windows; elsewhere `make setup` plus the packages you need
+pip install --require-hashes -r windows/requirements.txt   # on Windows (hash-locked; refresh: windows/requirements.in)
+pip install --no-deps --no-build-isolation -e ./pipeline -e ./windows
 cd windows && python -m pytest -q          # make test-windows; not part of make test (CI runs it on Windows)
 make windows-dev                           # the window in your browser (no tray or native dialogs), on any OS
 python -m neuralloop_desktop               # the real app, on Windows (from windows/)
-python windows/build.py                    # dist/NeuralLoop-<version>-setup.exe and a zip (`make windows`)
+python windows/build.py                    # dist/NeuralLoop-<version>-Setup.exe and a zip (`make windows`)
 ```
 
 `NEURALLOOP_HOME` puts the library somewhere other than `%LOCALAPPDATA%\NeuralLoop` (on a Mac or Linux, the app uses its own `NeuralLoop for Windows (development)` folder next to the Mac app's, never the Mac app's library), so a test library never touches yours.

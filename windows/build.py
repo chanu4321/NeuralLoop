@@ -1,11 +1,12 @@
 """Build NeuralLoop for Windows: `python windows/build.py`, on Windows, after
-`pip install -r windows/requirements.txt`.
+`pip install --require-hashes -r windows/requirements.txt` and the editable installs
+(windows/requirements.in).
 
 1. Draws the icons (NeuralLoop.ico, icon.png) from the iPad's 1024 px icon and the programs' version info, and
    gets espeak-ng (the official 64-bit installer, checked by SHA-256, unpacked into build/windows/espeak-ng).
 2. Runs PyInstaller (windows/NeuralLoop.spec) into dist/windows/NeuralLoop: NeuralLoop.exe and nl-book.exe.
 3. Checks the build like a download: nl-book.exe makes the sample book offline (practice model and voices).
-4. Packs it: dist/NeuralLoop-<version>-setup.exe with Inno Setup when `iscc` is installed, and always
+4. Packs it: dist/NeuralLoop-<version>-Setup.exe with Inno Setup when `iscc` is installed, and always
    dist/NeuralLoop-<version>-windows.zip.
 
 `--icons` only draws the icons (it runs anywhere); `--espeak` only gets espeak-ng (CI runs the pipeline's
@@ -207,7 +208,7 @@ def pack(number: str) -> None:
         ],
         "Inno Setup",
     )
-    print(f"Wrote {DIST / f'NeuralLoop-{number}-setup.exe'}")
+    print(f"Wrote {DIST / f'NeuralLoop-{number}-Setup.exe'}")
 
 
 def main() -> int:

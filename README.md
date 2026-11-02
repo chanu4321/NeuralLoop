@@ -99,8 +99,8 @@ fills in a little square for every day you study.
 
 <br>
 
-1. Download `NeuralLoop-<version>-setup.exe` from the [latest release](../../releases/latest), or build it yourself
-   (below). It installs just for you, no administrator needed.
+1. Build `NeuralLoop-<version>-Setup.exe` yourself (below); releases will carry it, with its SHA-256, from the
+   next version on. It installs just for you, no administrator needed.
 2. Windows may say it protected your PC (the app isn't signed yet): **More info → Run anyway**.
 3. Open NeuralLoop from the Start menu. Pip lives in the notification area by the clock (click the up arrow if
    it's hidden); closing the window keeps Pip there, and **Quit NeuralLoop** in Pip's menu ends it.
@@ -111,8 +111,9 @@ fills in a little square for every day you study.
 Build it on Windows with Python 3.12:
 
 ```powershell
-python -m pip install -r windows/requirements.txt
-python windows/build.py      # dist\NeuralLoop-<version>-setup.exe (with Inno Setup) and a .zip
+python -m pip install --require-hashes -r windows/requirements.txt
+python -m pip install --no-deps --no-build-isolation -e ./pipeline -e ./windows
+python windows/build.py      # dist\NeuralLoop-<version>-Setup.exe (with Inno Setup) and a .zip
 ```
 
 What's different from the Mac: no Google Drive sync or iPad library yet, Kokoro voices instead of Rumik, and keys
